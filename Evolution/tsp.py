@@ -1,6 +1,7 @@
 from random import shuffle
 import pandas as pd
 import math
+import copy
 
 class TSP:
 
@@ -21,6 +22,8 @@ class TSP:
                 return False
             elif sorted_tour[i] < 0:
                 return False
+
+        return True
 
     def evaluate_route(self, route):
         cost = 0
