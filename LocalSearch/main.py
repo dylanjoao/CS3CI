@@ -4,6 +4,10 @@ import copy
 import time
 import threading
 
+################################################
+# The novel variant is two opt swap
+################################################
+
 # Generate a neighbourhood from a route
 def city_swap_neighbourhood(route):
   neighbours = []
