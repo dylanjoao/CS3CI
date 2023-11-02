@@ -68,15 +68,15 @@ def evolution_search(tsp, limit, n_population):
             if _cost < best_cost:
                 best_cost = _cost
                 best_route = candidates[i]
+                track.append(_cost)
 
         # Select new population
         population = candidates
 
-        track.append(_cost)
         count += 1
 
 
-    print(track)
+    # print(track)
     print(f"Best route after {count} iterations {best_route}, with cost {best_cost} [Evolution]")
     return best_route
 
@@ -150,8 +150,8 @@ def evolution_inverover(tsp, limit, n_population):
 
     population = [tsp.random_route() for i in range(n_population)]
 
-    while count < limit:
-    # while time.time() < end:
+    # while count < limit:
+    while time.time() < end:
 
         for i in range(len(population)):
             s1 = copy.deepcopy(population[i])
@@ -162,61 +162,54 @@ def evolution_inverover(tsp, limit, n_population):
 
             while not terminate:
 
-                if random.randint(0, 100) < 69:
-                    city_end_index = random.choice([i for i in s1 if i != city_end_index])-1
+                chance = random.randint(0, 100)
+                if chance < 70:
+                    old_city_end_index = city_end_index
+                    while city_end_index != old_city_end_index:
+                        city_end_index = random.choice(s1)
                 else:
                     s2 = random.choice(population)
-                    city_end_index = s2.index(s1.index(city_start_index)+1)
+                    city_end_index = s2.index(s1[(city_start_index+1) % len(s1)])
 
-                # In the next iteration if c' is next to c
-                if (s1[city_start_index+1 % len(s1)] == s2[city_end_index]):
-                    terminate = True
+                # if city_end_index address is next to or behind city_start_index; terminate
+                if (s1[city_start_index] == s2[(city_end_index+1) % len(s1)] or s1[city_start_index] == s2[(city_end_index-1) % len(s1)]):
+                    break
 
-                s1 = invert_section_circular(s1, city_start_index, city_end_index)
+                # invert section
+                subset = circular_subset(s1, city_start_index+1, city_end_index)
+                subset.reverse()
+                for j in range(1, len(subset)+1):
+                    s1[(city_start_index+j) % len(s1)] = subset[j-1]
+
                 city_start_index = city_end_index
 
                 _cost = tsp.evaluate_route(s1)
                 if _cost <= tsp.evaluate_route(population[i]):
                     population[i] = s1
-                    track.append(_cost)
+
+                if _cost < best_cost:
+                    best_cost = _cost
+                    best_route = s1
+                    track.append(best_cost)
+
         count += 1
 
-    print("done")
-
-def invert_section_circular(lst, start, end):
-    length = len(lst)
-    section_length = (end - start + 1) % length  # Calculate section length
-
-    inverted_section = []
-    for i in range(section_length):
-        index = (start + i) % length
-        inverted_section.append(lst[index])
-
-    inverted_section = inverted_section[::-1]
-
-    result = lst.copy()
-    for i in range(section_length):
-        index = (start + i) % length
-        result[index] = inverted_section[i]
-
-    return result
+    # print(track)
+    print(f"Best route after {count} iterations {best_route}, with cost {best_cost} [InverOver]")
+    return best_route
 
 tsp = TSP([])
 tsp.matrix_from_csv('ulysses16.csv')
+
 # evolution_search(tsp, 3.0, 50)
-evolution_inverover(tsp, 1, 10)
+# evolution_inverover(tsp, 3.0, 50)
 
-# s1 = [2, 3, 9, 4, 1, 5, 8, 6, 7]
-# s2 = [1, 6, 4, 3, 5, 7, 9, 2, 8]
-# city_start_index = 1
-# city_start_address = s1[city_start_index]
-# city_end_index = s2.index(s1.index(city_start_index)+1)
-# city_end_address = s2[city_end_index]
 
-# s3 = invert_section_circular(s1, city_start_index+1, city_end_index+1)
+t1 = threading.Thread(target=evolution_inverover, args=(tsp, 3.0, 100))
+t2 = threading.Thread(target=evolution_search, args=(tsp, 3.0, 100))
 
-# # city_end_address = s2[city_end_index+1]
-# print(f"Start Index: {city_start_index}, Address: {city_start_address}")
-# print(f"End Index: {city_end_index}, Address: {city_end_address}")
-# print(f"Final list {s3}")
+t1.start()
+t2.start()
 
+t1.join()
+t2.join()
