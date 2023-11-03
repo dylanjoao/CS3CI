@@ -17,7 +17,7 @@ def random_search(antenna, limit):
         route = antenna.random_design()
         cost = antenna.evaluate(route)
 
-        if (abs(cost) < abs(best_cost)):
+        if (cost < best_cost):
             best_cost = cost
             best_route = route
 
@@ -44,7 +44,7 @@ def pso_search(antenna, limit, n_population):
 
         for particle in population:
             _cost = antenna.evaluate(particle.position)
-            if (abs(_cost) < abs(g_best_cost)):
+            if (_cost < g_best_cost):
                 g_best_cost = _cost
                 g_best_particle = copy.deepcopy(particle)
 
@@ -62,7 +62,7 @@ def pso_search(antenna, limit, n_population):
                 continue
 
             _cost = antenna.evaluate(particle.position)
-            if abs(_cost) < abs(particle.pb_cost):
+            if _cost < particle.pb_cost:
                 particle.pb_position = copy.deepcopy(particle.position)
                 particle.pb_cost = _cost
 
@@ -98,7 +98,7 @@ class Particle:
 
 antenna = AntennaArray(3, 90)
 
-t1 = threading.Thread(target=pso_search, args=(antenna, 10.0, 25))
+t1 = threading.Thread(target=pso_search, args=(antenna, 10.0, 10))
 t2 = threading.Thread(target=random_search, args=(antenna, 10.0))
 
 t1.start()

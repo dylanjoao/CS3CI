@@ -1,0 +1,8 @@
+algorithm A performs better than algorithm B (i.e. on average finds a lower cost solution given a budget of 1000
+function evaluations)
+
+[Alternate Hypothesis]
+Algo A on average outperforms Algo B on problems 1-5 in terms of cost
+
+[Null Hypothesis]
+Algo A on average no better than Algo B on problems 1-5 in terms of cost
