@@ -173,7 +173,9 @@ def evolution_inverover(tsp, limit, n_population):
 
                 # if city_end_index address is next to or behind city_start_index; terminate
                 if (s1[city_start_index] == s2[(city_end_index+1) % len(s1)] or s1[city_start_index] == s2[(city_end_index-1) % len(s1)]):
-                    break
+                    # print("Breaking...")
+                    terminate = True
+                    continue
 
                 # invert section
                 subset = circular_subset(s1, city_start_index+1, city_end_index)
@@ -190,6 +192,7 @@ def evolution_inverover(tsp, limit, n_population):
                 if _cost < best_cost:
                     best_cost = _cost
                     best_route = s1
+                    print(f"Better tour: {s1}, Cost: {_cost}")
                     track.append(best_cost)
 
         count += 1
@@ -205,8 +208,8 @@ tsp.matrix_from_csv('ulysses16.csv')
 # evolution_inverover(tsp, 3.0, 50)
 
 
-t1 = threading.Thread(target=evolution_inverover, args=(tsp, 3.0, 100))
-t2 = threading.Thread(target=evolution_search, args=(tsp, 3.0, 100))
+t1 = threading.Thread(target=evolution_inverover, args=(tsp, 5.0, 100))
+t2 = threading.Thread(target=evolution_search, args=(tsp, 5.0, 100))
 
 t1.start()
 t2.start()
