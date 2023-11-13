@@ -158,9 +158,9 @@ class Particle:
 antenna = AntennaArray(3, 90)
 
 
-t1 = threading.Thread(target=random_search, args=(antenna, 15.0))
-t2 = threading.Thread(target=pso_search, args=(antenna, 15.0, 12))
-t3 = threading.Thread(target=pso_constriction_search, args=(antenna, 15.0, 12))
+t1 = threading.Thread(target=random_search, args=(antenna, 10.0))
+t2 = threading.Thread(target=pso_search, args=(antenna, 10.0, 12))
+t3 = threading.Thread(target=pso_constriction_search, args=(antenna, 10.0, 12))
 
 t1.start()
 t2.start()

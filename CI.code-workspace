@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "ParticleSwarm"
+		},
+		{
+			"path": "LocalSearch"
+		},
+		{
+			"path": "Evolution"
+		}
+	],
+	"settings": {}
+}

@@ -160,7 +160,7 @@ def evolution_inverover(tsp, limit, n_population):
             city_end_index = -1
             terminate = False
 
-            while not terminate:
+            for i in range(50):
 
                 chance = random.randint(0, 100)
                 if chance < 70:
@@ -208,8 +208,8 @@ tsp.matrix_from_csv('ulysses16.csv')
 # evolution_inverover(tsp, 3.0, 50)
 
 
-t1 = threading.Thread(target=evolution_inverover, args=(tsp, 5.0, 100))
-t2 = threading.Thread(target=evolution_search, args=(tsp, 5.0, 100))
+t1 = threading.Thread(target=evolution_inverover, args=(tsp, 10.0, 100))
+t2 = threading.Thread(target=evolution_search, args=(tsp, 10.0, 100))
 
 t1.start()
 t2.start()
