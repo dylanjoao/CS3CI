@@ -202,10 +202,7 @@ def evolution_inverover(tsp, limit, n_population):
     return best_route
 
 tsp = TSP([])
-tsp.matrix_from_csv('ulysses16.csv')
-
-# evolution_search(tsp, 3.0, 50)
-# evolution_inverover(tsp, 3.0, 50)
+tsp.matrix_from_csv('cities63_11.csv')
 
 
 t1 = threading.Thread(target=evolution_inverover, args=(tsp, 10.0, 100))

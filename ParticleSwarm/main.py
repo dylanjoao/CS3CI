@@ -155,7 +155,7 @@ class Particle:
         return f"Position: {self.pb_position}, Cost: {self.pb_cost:.20f}"
 
 
-antenna = AntennaArray(3, 90)
+antenna = AntennaArray(4, 55)
 
 
 t1 = threading.Thread(target=random_search, args=(antenna, 10.0))

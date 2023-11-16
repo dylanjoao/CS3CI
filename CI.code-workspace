@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "Evolution"
+		},
+		{
+			"path": "CSP"
 		}
 	],
 	"settings": {}

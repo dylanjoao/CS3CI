@@ -119,6 +119,7 @@ def twoopt_search(tsp, limit):
         if (cost < best_cost):
             best_cost = cost
             best_route = best_neighbour
+            print(f"Better tour: {tour}, Cost: {cost}")
 
         tour = best_neighbour
         track.append(cost)
@@ -127,12 +128,12 @@ def twoopt_search(tsp, limit):
         if cost < pb_cost:
             improved = True
             pb_cost = cost
-            print(f"Better tour: {tour}, Cost: {cost}")
+            
 
         if not improved:
             tour = tsp.random_route()
             pb_cost = float('inf')
-            print("Randomising...")
+            # print("Randomising...")
             # track.append('REACHED')
 
 
@@ -160,7 +161,7 @@ def twopt_swap(route, vertex1, vertex2):
 
 
 tsp = TSP([])
-tsp.matrix_from_csv('ulysses16.csv')
+tsp.matrix_from_csv('cities63_11.csv')
 
 t1 = threading.Thread(target=local_search, args=(tsp, 10.0))
 t2 = threading.Thread(target=random_search, args=(tsp, 10.0))
