@@ -34,6 +34,8 @@ class CSP:
 #   If we can generate all possible patterns within the max bounds
 #   We can then cull the invalid patterns and be left (all?) valid patterns to select from
 #
+#   BELOW IS FOR A SINGLE STOCK LENGTH, NEED TO MODIFY
+#
 def generate_bounds(arr_rl, stock_length):
 
     max_bounds = []
