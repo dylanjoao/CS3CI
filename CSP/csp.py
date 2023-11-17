@@ -12,7 +12,7 @@ class CSP:
         
         self.requested_sizes = n        # 3
         self.requested_length = rl      # { 20, 25, 30 }
-        self.requsted_quantity = q      # { 5,  7, 5 }
+        self.requested_quantity = q      # { 5,  7, 5 }
 
         self.available_sizes = m        # 3
         self.available_lengths = l      # { 50, 80, 100 }
@@ -43,7 +43,6 @@ class CSP:
 
         return bounds
     
-
     def generate_combinations(self):
 
         total_patterns = []
@@ -97,101 +96,76 @@ class CSP:
         return total_patterns
 
 
-
-
-#####
-#
-#   If we can generate all possible patterns within the max bounds
-#   We can then cull the invalid patterns and be left (all?) valid patterns to select from
-#
-#   BELOW IS FOR A SINGLE STOCK LENGTH, NEED TO MODIFY
-#
-def generate_bounds(requested_length, stock_length):
-
-    max_bounds = []
-    for i in range(len(requested_length)):
-        max_bounds.append(stock_length // requested_length[i])
-
-    return max_bounds
-
-def generate_combinations(arr):
-    result = []
-    length = len(arr)
-    patterns = []
-
-    for i in range(length):
-        combinations = []
-        for j in range(arr[i] + 1):
-            combinations.append(j)
-        result.append(combinations)
-
-    for combination in itertools.product(*result):
-        patterns.append(combination)
-
-    return patterns
-
-def cull_invalid_combinations(combinations, requested_lengths, stock_length):
-
-    patterns = []
-    for i in range(len(combinations)):
-        total = 0
-        for j in range(len(combinations[i])):
-            total += combinations[i][j] * requested_lengths[j]
-
-        if total <= stock_length:
-            patterns.append(combinations[i])
-
-    return patterns
-
-
-
-# arl = [20,25,30]
-# arl_bounds = generate_bounds(arl, 50)
-# combinations = generate_combinations(arl_bounds)
-# valid_patterns = cull_invalid_combinations(combinations, arl, 50)
-
-# # print(arl_bounds)
-# for pattern in valid_patterns:
-#     print(pattern)
-# print("====")
-
-# arl_bounds = generate_bounds(arl, 80)
-# combinations = generate_combinations(arl_bounds)
-# valid_patterns = cull_invalid_combinations(combinations, arl, 80)
-# print(arl_bounds)
-# for pattern in valid_patterns:
-#     print(pattern)
-# print("====")
-
-# arl_bounds = generate_bounds(arl, 100)
-# combinations = generate_combinations(arl_bounds)
-# valid_patterns = cull_invalid_combinations(combinations, arl, 100)
-# print(arl_bounds)
-# for pattern in valid_patterns:
-#     print(pattern)
-# print("====")
-
-
 csp_instance = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
-print(csp_instance.bounds)
+# print(csp_instance.bounds)
 
-for i in range(len(csp_instance.cutting_patterns)):
-    print("\n")
-    for j in range(len(csp_instance.cutting_patterns[i])):
-        print(csp_instance.cutting_patterns[i][j])
+# for i in range(len(csp_instance.cutting_patterns)):
+#     print("\n")
+#     for j in range(len(csp_instance.cutting_patterns[i])):
+#         print(csp_instance.cutting_patterns[i][j])
 
 def random_search(csp_i):
-    accum_q = np.empty((len(csp_i.cutting_patterns))) # 2d array
+    patterns_used = [] # 2D Array
     satisfied = False
+
+    for i in range(len(csp_i.cutting_patterns)):
+        patterns_used.append([])
 
     while not satisfied:
         r1 = random.randint(0, len(csp_i.cutting_patterns)-1)
         r2 = random.randint(0, len(csp_i.cutting_patterns[r1])-1)
         pattern = csp_i.cutting_patterns[r1][r2]
 
-        np.append(accum_q[r1], pattern)
+        patterns_used[r1].append(pattern)
 
-        print(accum_q)
+        accum_q = [ 0 for i in range(len(csp_i.cutting_patterns)) ]
+
+        # For each stock length pattern
+        for i in range(len(patterns_used)):
+
+            # For each pattern in stock i
+            for j in range(len(patterns_used[i])):
+
+                # For each value in pattern j
+                for k in range(len(patterns_used[i][j])):
+
+                    # Add to accum stock column the 
+                    accum_q[k] += patterns_used[i][j][k]
+
+        s = True
+        for i in range(len(accum_q)):
+            if accum_q[i] < csp_i.requested_quantity[i]:
+                s = False
+                break
+
+        if s: 
+            satisfied = True
+            print(accum_q)
+
+    print(patterns_used)
+
+    return patterns_used
+
+
+
+        
+    # print(patterns_used)
+    # accum_q = [ 0 for i in range(len(csp_i.cutting_patterns)) ]
+
+    # # For each stock length pattern
+    # for i in range(len(patterns_used)):
+
+    #     # For each pattern in stock i
+    #     for j in range(len(patterns_used[i])):
+
+    #         # For each value in pattern j
+    #         for k in range(len(patterns_used[i][j])):
+
+    #             # Add to accum stock column the 
+    #             accum_q[k] += patterns_used[i][j][k]
+
+    # print(accum_q)
+
 
 
 random_search(csp_instance)
@@ -201,19 +175,6 @@ random_search(csp_instance)
 # requested_q = [5, 7, 5]
 # cost = [100, 175, 250]
 # satisfied = False
-
-# def random_search(valid_pattern, requested_q, cost):
-#     accum_q = []
-#     selected_patterns = []
-#     satisfied = False
-
-#     while not satisfied:
-#         sp = random.sample(valid_patterns)
-#         selected_patterns.append(sp)
-        
-
-
-#         if ()
 
     
 
