@@ -3,6 +3,7 @@ import random
 import pandas as pd
 import math
 import numpy as np
+import time
 from itertools import permutations
 
 
@@ -83,28 +84,88 @@ class CSP:
                     
                     c_pattern = combinations[i][j]
                     value = combinations[i][j][k]
-                    cutting_stock = self.requested_length[i]
+                    cutting_stock = self.requested_length[k]
                     # 
                     total += value * cutting_stock
 
                     #
-                if total <= self.available_lengths[i]:
+                if total <= self.available_lengths[i] and total > 0:
                     patterns.append(combinations[i][j])
 
             total_patterns.append(patterns)
 
         return total_patterns
+    
+    def get_quantities_produced(self, patterns_used):
+        accum_q = [ 0 for i in range(len(self.cutting_patterns)) ]
+        # For each stock length pattern
+        for i in range(len(patterns_used)):
 
+            # For each pattern in stock i
+            for j in range(len(patterns_used[i])):
 
-csp_instance = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
-# print(csp_instance.bounds)
+                # For each value in pattern j
+                for k in range(len(patterns_used[i][j])):
+
+                    # Add to accum stock column the 
+                    accum_q[k] += patterns_used[i][j][k]
+
+        return accum_q
+
+    def get_stock_cost(self, patterns_used):
+        cost = [ 0 for i in range(len(patterns_used))]
+
+        for i in range(len(patterns_used)):
+            cost[i] += len(patterns_used[i]) * self.available_stock_cost[i]
+
+        return cost
+    
+    def get_wastage(self, patterns_used):
+        wastage = [0 for i in range(len(patterns_used))]
+
+        for i in range(len(patterns_used)):
+            for pattern in patterns_used[i]:
+                p_i = Pattern(pattern, self.available_lengths[i], self.requested_length)
+                wastage[i] += p_i.material_wastage
+
+        return wastage
+
+    def pretty_print_solution(self, solution):
+        quantities = self.get_quantities_produced(solution)
+        cost_ar = self.get_stock_cost(solution)
+        waste = self.get_wastage(solution)
+        print(f"Solution: {solution}")
+        print(f"Quantities produced: {quantities}, Cost: {cost_ar}, Cost Total: {np.sum(cost_ar)}")
+        print(f"Material wastage: {waste}, Wastage Total: {np.sum(waste)}")
+
+class Pattern:
+
+    def __init__(self, pattern, stock_length, requested_length):
+        self.pattern = pattern
+        self.stock_length = stock_length
+        self.material_wastage = self.calculate_wastage(requested_length)
+
+    def calculate_wastage(self, requested_length):
+
+        total = 0
+        for i in range(len(self.pattern)):
+            total += self.pattern[i] * requested_length[i]
+
+        return self.stock_length - total
+
+            
+
+# pattern_instance = Pattern([1,1,0], 50, [20, 25, 30])
+# print(f"Material wastage for pattern {pattern_instance.pattern} of stock length {pattern_instance.stock_length} is {pattern_instance.material_wastage}")
+
 
 # for i in range(len(csp_instance.cutting_patterns)):
-#     print("\n")
-#     for j in range(len(csp_instance.cutting_patterns[i])):
-#         print(csp_instance.cutting_patterns[i][j])
+#     print(f"Patterns for {csp_instance.available_lengths[i]}")
+#     for pattern in csp_instance.cutting_patterns[i]:
+#         print(pattern)
 
-def random_search(csp_i):
+
+def random_solution(csp_i):
     patterns_used = [] # 2D Array
     satisfied = False
 
@@ -118,19 +179,7 @@ def random_search(csp_i):
 
         patterns_used[r1].append(pattern)
 
-        accum_q = [ 0 for i in range(len(csp_i.cutting_patterns)) ]
-
-        # For each stock length pattern
-        for i in range(len(patterns_used)):
-
-            # For each pattern in stock i
-            for j in range(len(patterns_used[i])):
-
-                # For each value in pattern j
-                for k in range(len(patterns_used[i][j])):
-
-                    # Add to accum stock column the 
-                    accum_q[k] += patterns_used[i][j][k]
+        accum_q =  csp_i.get_quantities_produced(patterns_used)
 
         s = True
         for i in range(len(accum_q)):
@@ -140,41 +189,37 @@ def random_search(csp_i):
 
         if s: 
             satisfied = True
-            print(accum_q)
-
-    print(patterns_used)
 
     return patterns_used
 
+# Fitness based on material wastage for now
+def random_search(csp, limit):
+    end = time.time() + limit # time + seconds
 
+    count = 0
+    best_waste = float('inf')
+    best_solution = []
 
-        
-    # print(patterns_used)
-    # accum_q = [ 0 for i in range(len(csp_i.cutting_patterns)) ]
+    # while count < limit:
+    while time.time() < end:
+        solution = random_solution(csp)
+        waste = np.sum(csp.get_wastage(solution))
 
-    # # For each stock length pattern
-    # for i in range(len(patterns_used)):
+        if (waste < best_waste):
+            best_waste = waste
+            best_solution = solution
 
-    #     # For each pattern in stock i
-    #     for j in range(len(patterns_used[i])):
+        count += 1
 
-    #         # For each value in pattern j
-    #         for k in range(len(patterns_used[i][j])):
+    csp.pretty_print_solution(best_solution)
+    print(f"Best solution after {count} iterations with material wastage {best_waste} [Random Search]")
+    return best_solution
 
-    #             # Add to accum stock column the 
-    #             accum_q[k] += patterns_used[i][j][k]
-
-    # print(accum_q)
-
-
-
-random_search(csp_instance)
-
-
+csp_instance = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
+random_search(csp_instance, 5.0)
 
 # requested_q = [5, 7, 5]
 # cost = [100, 175, 250]
-# satisfied = False
 
     
 
