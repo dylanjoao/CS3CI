@@ -98,25 +98,25 @@ class CSP:
         return total_patterns
     
     def get_quantities_produced(self, solution):
-        accum_q = [ 0 for i in range(len(self.cutting_patterns)) ]
+        # Returns a 1d array of all quantities produced
+        # Sum of all nth element in pattern
+        sum = [ 0 for i in range(self.requested_sizes) ]
+
         #For each stock length pattern
         for i in range(len(solution)):
+            stock = solution[i]
 
             # For each pattern in stock i
             for j in range(len(solution[i])):
-
+                
                 # For each value in pattern j
                 for k in range(len(solution[i][j])):
 
-                    # Add to accum stock column the 
-                    accum_q[k] += solution[i][j][k]
+                    sum[k] += solution[i][j][k]
+                
+            
 
-        # for stock_patterns in solution:
-        #     for i, pattern in enumerate(stock_patterns):
-        #         for j, value in enumerate(pattern):
-        #             accum_q[j] += value
-
-        return accum_q
+        return sum
 
     def get_total_cost(self, solution):
         cost = [ 0 for i in range(len(solution))]
@@ -158,17 +158,6 @@ class Pattern:
             total += self.pattern[i] * requested_length[i]
 
         return self.stock_length - total
-
-            
-
-# pattern_instance = Pattern([1,1,0], 50, [20, 25, 30])
-# print(f"Material wastage for pattern {pattern_instance.pattern} of stock length {pattern_instance.stock_length} is {pattern_instance.material_wastage}")
-
-
-# for i in range(len(csp_instance.cutting_patterns)):
-#     print(f"Patterns for {csp_instance.available_lengths[i]}")
-#     for pattern in csp_instance.cutting_patterns[i]:
-#         print(pattern)
 
 
 def random_solution(csp_i):
@@ -221,14 +210,14 @@ def random_search(csp, limit):
     print(f"Best solution after {count} iterations with fitness {best_cost} [Random Search]")
     return best_solution
 
-# csp_instance = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
+csp_instance = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
 # print(random.sample(csp_instance.cutting_patterns[0], 1))
 # print(csp_instance.get_quantities_produced(random.sample(csp_instance.cutting_patterns[0], 1)))
-# random_search(csp_instance, 5.0)
+random_search(csp_instance, 5.0)
 
 
 problem_1 = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
-print(random_solution(problem_1))
+# print(random_solution(problem_1))
 # print(len(problem_1.cutting_patterns))
 # print(random.sample(problem_1.cutting_patterns[0], 1))
 # print(problem_1.get_quantities_produced(random.sample(problem_1.cutting_patterns[0], 1)))
