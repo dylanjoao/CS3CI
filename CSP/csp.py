@@ -1,15 +1,13 @@
+
 import itertools
 import random
-import pandas as pd
-import math
-import numpy as np
 import time
-from itertools import permutations
+
+import numpy as np
 
 
 class CSP:
-
-    # RequestedSize RequestedLength RequestedQuantities AvailSize AvailLengths AvailStockCosts 
+    
     def __init__(self, n, rl, q, m, l, c):
         
         self.requested_sizes = n        # 3
@@ -24,16 +22,6 @@ class CSP:
         self.bounds = self.generate_bounds()
         combinations = self.generate_combinations()
         self.cutting_patterns = self.cull_invalid_patterns(combinations)
-
-        # n different sizes                         3
-        # rl requested length                       {20,25,30}
-        # q quantities of the sizes                 {5,7,5}
-
-        # m amount of stock sizes                   3
-        # l lengths of the available stock sizes    {50, 80, 100} 
-        # c cost of the stock                       {100, 175, 250}
-
-        # [2, 0, 0]
 
     def generate_bounds(self):
         bounds = []
@@ -67,34 +55,7 @@ class CSP:
             total_patterns.append(patterns)
 
         return total_patterns
-
-    def random_solution(self):
-        patterns_used = [] # 2D Array
-        satisfied = False
-
-        for i in range(len(self.cutting_patterns)):
-            patterns_used.append([])
-
-        while not satisfied:
-            r1 = random.randint(0, len(self.cutting_patterns)-1)
-            r2 = random.randint(0, len(self.cutting_patterns[r1])-1)
-            pattern = self.cutting_patterns[r1][r2]
-
-            patterns_used[r1].append(pattern)
-
-            accum_q = self.get_quantities_produced(patterns_used)
-
-            s = True
-            for i in range(len(accum_q)):
-                if accum_q[i] < self.requested_quantity[i]:
-                    s = False
-                    break
-
-            if s: 
-                satisfied = True
-
-        return patterns_used
-
+    
     def cull_invalid_patterns(self, combinations):
 
         total_patterns = []
@@ -123,7 +84,7 @@ class CSP:
             total_patterns.append(patterns)
 
         return total_patterns
-    
+  
     def get_quantities_produced(self, solution):
         # Returns a 1d array of all quantities produced
         # Sum of all nth element in pattern
@@ -137,47 +98,83 @@ class CSP:
             for j in range(len(solution[i])):
                 
                 # For each value in pattern j
-                for k in range(len(solution[i][j])):
+                for k in range(len(self.cutting_patterns[i][solution[i][j]])):
 
-                    sum[k] += solution[i][j][k]
-                
-            
+                    sum[k] += self.cutting_patterns[i][solution[i][j]][k]
 
         return sum
 
+    def random_solution(self):
+        patterns_used = [] # 2D Array
+        satisfied = False
+
+        for i in range(len(self.cutting_patterns)):
+            patterns_used.append([])
+
+        while not satisfied:
+            r1 = random.randint(0, len(self.cutting_patterns)-1)
+            r2 = random.randint(0, len(self.cutting_patterns[r1])-1)
+            pattern = self.cutting_patterns[r1][r2]
+
+            patterns_used[r1].append(r2)
+
+            accum_q = self.get_quantities_produced(patterns_used)
+
+            s = True
+            for i in range(len(accum_q)):
+                if accum_q[i] < self.requested_quantity[i]:
+                    s = False
+                    break
+
+            if s: 
+                satisfied = True
+
+        return patterns_used
+    
+    def is_valid(self, solution):
+        # Check enough quantity is produced 
+        # Check the cutting patterns are valid
+
+        valid = True
+        accum_q = self.get_quantities_produced(solution)
+
+        for i in range(len(accum_q)):
+            if accum_q[i] < self.requested_quantity[i]:
+                return False
+        
+
+        return valid
+ 
     def evaluate_cost(self, solution):
+    # board * amount of patterns used for board
         cost = [ 0 for i in range(len(solution))]
 
         for i in range(len(solution)):
             cost[i] += len(solution[i]) * self.available_stock_cost[i]
 
-        return cost
+        return np.sum(cost)
     
     def evaluate_wastage(self, solution):
         wastage = [0 for i in range(len(solution))]
 
         for i in range(len(solution)):
             for pattern in solution[i]:
-                p_i = Pattern(pattern, self.available_lengths[i], self.requested_length)
+                p_i = Pattern(self.cutting_patterns[i][pattern], self.available_lengths[i], self.requested_length)
                 wastage[i] += p_i.material_wastage
 
-        return wastage
+        return np.sum(wastage)
+    
+    def view_solution(self, solution):
+        patterns = []
+        for stock in range(len(solution)):
+            stock_patterns = []
+            for pattern_index in solution[stock]:
+                stock_patterns.append(self.cutting_patterns[stock][pattern_index])
+            patterns.append(stock_patterns)
+        return patterns
 
-    def is_valid(self, solution):
-        # Check enough quantity is produced 
-        # Check the cutting patterns are valid
-        pass
-
-    def pretty_print_solution(self, solution):
-        quantities = self.get_quantities_produced(solution)
-        cost_ar = self.get_total_cost(solution)
-        waste = self.get_wastage(solution)
-        print(f"Solution: {solution}")
-        print(f"Quantities produced: {quantities}, Cost: {cost_ar}, Cost Total: {np.sum(cost_ar)}")
-        print(f"Material wastage: {waste}, Wastage Total: {np.sum(waste)}")
 
 class Pattern:
-
     def __init__(self, pattern, stock_length, requested_length):
         self.pattern = pattern
         self.stock_length = stock_length
@@ -190,11 +187,10 @@ class Pattern:
             total += self.pattern[i] * requested_length[i]
 
         return self.stock_length - total
-
-
+    
 
 # Fitness based on material wastage for now
-def random_search(csp, limit):
+def random_search(csp, SOLUTION_FUNC, FITNESS_FUNC, limit):
     end = time.time() + limit # time + seconds
 
     count = 0
@@ -203,8 +199,8 @@ def random_search(csp, limit):
 
     # while count < limit:
     while time.time() < end:
-        solution = random_solution(csp)
-        fitness = np.sum(csp.get_total_cost(solution))
+        solution = SOLUTION_FUNC()
+        fitness = FITNESS_FUNC(solution)
 
         if (fitness < best_cost):
             best_cost = fitness
@@ -212,51 +208,18 @@ def random_search(csp, limit):
 
         count += 1
 
-    csp.pretty_print_solution(best_solution)
     print(f"Best solution after {count} iterations with fitness {best_cost} [Random Search]")
     return best_solution
 
-csp_instance = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
-print(csp_instance.random_solution())
-# print(random.sample(csp_instance.cutting_patterns[0], 1))
-# print(csp_instance.get_quantities_produced(random.sample(csp_instance.cutting_patterns[0], 1)))
-# random_search(csp_instance, 5.0)
 
+# csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
+csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
 
-# problem_1 = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
-# print(random_solution(problem_1))
-# print(len(problem_1.cutting_patterns))
-# print(random.sample(problem_1.cutting_patterns[0], 1))
-# print(problem_1.get_quantities_produced(random.sample(problem_1.cutting_patterns[0], 1)))
-# random_search(problem_1, 10.0)
-
-    
-# rl 20 from sl 50
-#   2 0 0
-#   1 0 0
-#   1 1 0
-#   0 1 0
-#   1 0 1
-#   0 0 1
-#   0 2 0
-
-
-### A solution
-#
-#   Consists of patterns until we are finished 
-#   a0  a1  a2  a3  a4  a6 ... Patterns
-#   0   1   0   3   0   2       Amount of times used 
-#
-
-# RequestedSize RequestedLength RequestedQuantities AvailSize AvailLengths AvailStockCosts 
-# Requested Length =    [3, 4, 5, 6, 7, 8, 9, 10]
-# Requested Q'ities =   [5, 2, 1, 2, 4, 2, 1, 3]
-# Avail Lengths =       [10, 13, 15]
-
-# 3 cutting patterns
-# May produce up to 7 pieces for a pattern
-
-
-    
-## Problems
-# quantities produced is returning too short of a list
+random_search_solution = random_search(csp, csp.random_solution, csp.evaluate_cost, 1.0)
+solution = random_search_solution
+patterns = csp.view_solution(solution)
+produced = csp.get_quantities_produced(solution)
+cost = csp.evaluate_cost(solution)
+wastage = csp.evaluate_wastage(solution)
+valid = csp.is_valid(solution)
+print(f"Solution {solution}\nPatterns: {patterns}\nProduced: {produced}\nCost: {cost}\nWastage: {wastage}\nValid: {valid}")
