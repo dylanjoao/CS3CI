@@ -212,14 +212,14 @@ def random_search(csp, SOLUTION_FUNC, FITNESS_FUNC, limit):
     return best_solution
 
 
-# csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
-csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
+# # csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
+# csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
 
-random_search_solution = random_search(csp, csp.random_solution, csp.evaluate_cost, 1.0)
-solution = random_search_solution
-patterns = csp.view_solution(solution)
-produced = csp.get_quantities_produced(solution)
-cost = csp.evaluate_cost(solution)
-wastage = csp.evaluate_wastage(solution)
-valid = csp.is_valid(solution)
-print(f"Solution {solution}\nPatterns: {patterns}\nProduced: {produced}\nCost: {cost}\nWastage: {wastage}\nValid: {valid}")
+# random_search_solution = random_search(csp, csp.random_solution, csp.evaluate_cost, 1.0)
+# solution = random_search_solution
+# patterns = csp.view_solution(solution)
+# produced = csp.get_quantities_produced(solution)
+# cost = csp.evaluate_cost(solution)
+# wastage = csp.evaluate_wastage(solution)
+# valid = csp.is_valid(solution)
+# print(f"Solution {solution}\nPatterns: {patterns}\nProduced: {produced}\nCost: {cost}\nWastage: {wastage}\nValid: {valid}")
