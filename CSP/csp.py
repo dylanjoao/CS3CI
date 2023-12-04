@@ -67,7 +67,34 @@ class CSP:
             total_patterns.append(patterns)
 
         return total_patterns
-    
+
+    def random_solution(self):
+        patterns_used = [] # 2D Array
+        satisfied = False
+
+        for i in range(len(self.cutting_patterns)):
+            patterns_used.append([])
+
+        while not satisfied:
+            r1 = random.randint(0, len(self.cutting_patterns)-1)
+            r2 = random.randint(0, len(self.cutting_patterns[r1])-1)
+            pattern = self.cutting_patterns[r1][r2]
+
+            patterns_used[r1].append(pattern)
+
+            accum_q = self.get_quantities_produced(patterns_used)
+
+            s = True
+            for i in range(len(accum_q)):
+                if accum_q[i] < self.requested_quantity[i]:
+                    s = False
+                    break
+
+            if s: 
+                satisfied = True
+
+        return patterns_used
+
     def cull_invalid_patterns(self, combinations):
 
         total_patterns = []
@@ -118,7 +145,7 @@ class CSP:
 
         return sum
 
-    def get_total_cost(self, solution):
+    def evaluate_cost(self, solution):
         cost = [ 0 for i in range(len(solution))]
 
         for i in range(len(solution)):
@@ -126,7 +153,7 @@ class CSP:
 
         return cost
     
-    def get_wastage(self, solution):
+    def evaluate_wastage(self, solution):
         wastage = [0 for i in range(len(solution))]
 
         for i in range(len(solution)):
@@ -135,6 +162,11 @@ class CSP:
                 wastage[i] += p_i.material_wastage
 
         return wastage
+
+    def is_valid(self, solution):
+        # Check enough quantity is produced 
+        # Check the cutting patterns are valid
+        pass
 
     def pretty_print_solution(self, solution):
         quantities = self.get_quantities_produced(solution)
@@ -160,32 +192,6 @@ class Pattern:
         return self.stock_length - total
 
 
-def random_solution(csp_i):
-    patterns_used = [] # 2D Array
-    satisfied = False
-
-    for i in range(len(csp_i.cutting_patterns)):
-        patterns_used.append([])
-
-    while not satisfied:
-        r1 = random.randint(0, len(csp_i.cutting_patterns)-1)
-        r2 = random.randint(0, len(csp_i.cutting_patterns[r1])-1)
-        pattern = csp_i.cutting_patterns[r1][r2]
-
-        patterns_used[r1].append(pattern)
-
-        accum_q = csp_i.get_quantities_produced(patterns_used)
-
-        s = True
-        for i in range(len(accum_q)):
-            if accum_q[i] < csp_i.requested_quantity[i]:
-                s = False
-                break
-
-        if s: 
-            satisfied = True
-
-    return patterns_used
 
 # Fitness based on material wastage for now
 def random_search(csp, limit):
@@ -198,10 +204,10 @@ def random_search(csp, limit):
     # while count < limit:
     while time.time() < end:
         solution = random_solution(csp)
-        cost = np.sum(csp.get_total_cost(solution))
+        fitness = np.sum(csp.get_total_cost(solution))
 
-        if (cost < best_cost):
-            best_cost = cost
+        if (fitness < best_cost):
+            best_cost = fitness
             best_solution = solution
 
         count += 1
@@ -211,23 +217,20 @@ def random_search(csp, limit):
     return best_solution
 
 csp_instance = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
+print(csp_instance.random_solution())
 # print(random.sample(csp_instance.cutting_patterns[0], 1))
 # print(csp_instance.get_quantities_produced(random.sample(csp_instance.cutting_patterns[0], 1)))
-random_search(csp_instance, 5.0)
+# random_search(csp_instance, 5.0)
 
 
-problem_1 = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
+# problem_1 = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
 # print(random_solution(problem_1))
 # print(len(problem_1.cutting_patterns))
 # print(random.sample(problem_1.cutting_patterns[0], 1))
 # print(problem_1.get_quantities_produced(random.sample(problem_1.cutting_patterns[0], 1)))
-# random_search(problem_1, 5.0)
-
-# requested_q = [5, 7, 5]
-# cost = [100, 175, 250]
+# random_search(problem_1, 10.0)
 
     
-
 # rl 20 from sl 50
 #   2 0 0
 #   1 0 0
