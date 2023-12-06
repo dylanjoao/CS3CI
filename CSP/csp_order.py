@@ -3,7 +3,7 @@ from copy import copy
 from random import shuffle, randint, choices
 from math import sqrt
 from time import time
-
+from threading import Thread
 
 class CSP:
 
@@ -117,20 +117,51 @@ def random_search(csp, SOLUTION_FUNC, FITNESS_FUNC, limit):
 
         count += 1
 
-    print(f"Best solution after {count} iterations with fitness {best_cost} [Random Search]")
+    decoded = csp.decode(best_solution)
+    print(f"Best solution after {count} iterations, with fitness {best_cost}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]} \n[Random Search] {best_solution}\n")
     return best_solution
 
 def evolution_search(csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit):
+    end = time() + limit
     generation = 0
-    population = [ SOLUTION_FUNC() for _ in range(population_n) ]
-    population_cost = []
+    population = [SOLUTION_FUNC() for _ in range(population_n)]
+    population_cost = [FITNESS_FUNC(s) for s in population]
     
-    for i in range(len(population)):
-        population_cost.append(FITNESS_FUNC(population[i]))
+    best_solution = None
+    best_fitness = float('inf')
 
-    offsprings = []
-    for i in range(len(population)):
-        offsprings.append(mutate_3ps(population[i]))
+    # Double mutation
+    # while generation < limit:
+    while time() < end:
+        offsprings = [mutate_3ps(mutate_3ps(parent)) for parent in population]
+        offsprings_cost = [FITNESS_FUNC(offspring) for offspring in population]
+
+        all_individuals = population + offsprings
+        all_costs = population_cost + offsprings_cost
+
+        wins = [0 for _ in range(len(all_individuals))]
+        for i in range(len(all_individuals)):
+            for q in range(10):  # Perform 10 pairwise comparisons for each individual
+                opponent_index = randint(0, len(all_individuals)-1)
+                if all_costs[i] <= all_costs[opponent_index]:
+                    wins[i] += 1
+
+        selected_indices = sorted(range(len(all_individuals)), key=lambda i: wins[i], reverse=True)[:population_n]
+        population = [all_individuals[idx] for idx in selected_indices]
+        population_cost = [all_costs[idx] for idx in selected_indices]
+
+        for i in range(len(offsprings)):
+            if offsprings_cost[i] < best_fitness:
+                best_solution = offsprings[i]
+                best_fitness = offsprings_cost[i]
+                print(f"Improved in gen {generation} with {best_fitness}")
+
+        generation += 1
+
+    decoded = csp.decode(best_solution)
+    print(f"Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]} \n[EA Search] {best_solution}\n")
+
+    return best_solution
 
 
 def mutate_3ps(individual):
@@ -146,6 +177,8 @@ def mutate_3ps(individual):
     
     w_all = 0
 
+    wastage_percent = 0
+
     for i in range(solution_length):
         if not decoded["solution"][i]["waste"] == 0:
             w_all += sqrt(1/decoded["solution"][i]["waste"])
@@ -155,13 +188,17 @@ def mutate_3ps(individual):
         if w == 0: continue
         weights[j] = sqrt(1/w)/w_all
 
-    indexes = [randint(0, len(individual))]
+    indexes = [randint(0, len(individual)-1)]
     
     done = False
 
-    while not done:
+    for _ in range(10):
 
-        stock_index = choices(range(solution_length), weights=weights)[0]
+        if sum(weights) == 0.0:
+            stock_index = randint(0, solution_length-1)
+        else:
+            stock_index = choices(range(solution_length), weights=weights)[0]
+
         stock = decoded["solution"][stock_index]
         stock_next = decoded["solution"][(stock_index%(solution_length-1))+1]
         points = [stock["point"], stock_next["point"]]
@@ -182,16 +219,27 @@ def mutate_3ps(individual):
 
 
 
-# csp = CSP(18, 
-#           [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
-#           [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
-#           8,
-#           [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
-#           [86, 85, 83, 79, 68, 66, 64, 63]
-#           )
+csp = CSP(18, 
+          [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
+          [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
+          8,
+          [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
+          [86, 85, 83, 79, 68, 66, 64, 63]
+          )
 # csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
 # csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
-csp = CSP(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])
+# csp = CSP(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])
 
 # random_search(csp, csp.random_solution, csp.evaluate, 5.0)
-evolution_search(csp, 10, csp.random_solution, csp.evaluate, 5.0)
+# solution = evolution_search(csp, 10, csp.random_solution, csp.evaluate, 3.0)
+# decoded = csp.decode(solution)
+# print(f"Total waste: {decoded["total_wastage"]}\nTotal cost: {decoded["total_cost"]}")
+
+t1 = Thread(target=random_search, args=(csp, csp.random_solution, csp.evaluate, 5.0))
+t2 = Thread(target=evolution_search, args=(csp, 15, csp.random_solution, csp.evaluate, 5.0))
+
+t1.start()
+t2.start()
+
+t1.join()
+t2.join()
