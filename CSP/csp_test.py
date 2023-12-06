@@ -1,9 +1,9 @@
 from deap import creator, base, tools, algorithms
 import numpy as np
-from csp import CSP
+from csp_order import CSP
 
 
-csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
+csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
 
 # Minimisation of cost and wastage
 creator.create("Fitness", base.Fitness, weights=(-1.0, -1.0))
@@ -11,13 +11,9 @@ creator.create("Individual", list, fitness=creator.Fitness)
 
 toolbox = base.Toolbox()
 
-# Need to model an "individual"
 
 IND_SIZE=10
 
-# An individual contains patterns
-# perhaps, [2, 19, 12, 15, 63]
-# 2 being the stock length followed by pattern indexes
 
 toolbox.register("attr_patterns", csp.random_solution)
 
