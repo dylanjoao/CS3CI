@@ -99,7 +99,9 @@ class CSP:
 
         return fitness
 
-    
+    def evaluate_cost(self, solution):
+        return self.decode(solution)["total_cost"]
+
     def get_solution_info(self, solution):
         decoded = self.decode(solution)
         cutting_points = [info["point"] for info in decoded["solution"]]
@@ -164,6 +166,7 @@ def evolution_search(csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit):
                 if all_costs[i] <= all_costs[opponent_index]:
                     wins[i] += 1
 
+        ## REDO PLEASE
         selected_indices = sorted(range(len(all_individuals)), key=lambda i: wins[i], reverse=True)[:population_n]
         population = [all_individuals[idx] for idx in selected_indices]
         population_cost = [all_costs[idx] for idx in selected_indices]
@@ -246,8 +249,8 @@ csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
 # csp = CSP(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])
 
 
-t1 = Thread(target=random_search, args=(csp, csp.random_solution, csp.evaluate, 5.0))
-t2 = Thread(target=evolution_search, args=(csp, 15, csp.random_solution, csp.evaluate, 5.0))
+t1 = Thread(target=random_search, args=(csp, csp.random_solution, csp.evaluate_cost, 5.0))
+t2 = Thread(target=evolution_search, args=(csp, 15, csp.random_solution, csp.evaluate_cost, 5.0))
 
 t1.start()
 t2.start()
