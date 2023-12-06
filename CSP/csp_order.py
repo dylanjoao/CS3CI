@@ -98,7 +98,25 @@ class CSP:
         fitness = (1/(m+1))*(term1+term2)
 
         return fitness
+
     
+    def get_solution_info(self, solution):
+        decoded = self.decode(solution)
+        cutting_points = [info["point"] for info in decoded["solution"]]
+        costs = [self.stock_costs[self.stock_lengths.index(info["stock"])] for info in decoded["solution"]]
+        lengths = [info["stock"] for info in decoded["solution"]]
+        wastages = [info["waste"] for info in decoded["solution"]]
+
+        info = ""
+        info += ("Solution:    {}\n".format(solution))
+        info += ("Cost:        | {} |\n".format(" | ".join("{:3}".format(cost) for cost in costs)))
+        info += ("Length:      | {} |\n".format(" | ".join("{:3}".format(length) for length in lengths)))
+        info += ("Wastage:     | {} |".format(" | ".join("{:3}".format(wastage) for wastage in wastages)))
+
+        return info
+
+
+
 def random_search(csp, SOLUTION_FUNC, FITNESS_FUNC, limit):
     end = time() + limit # time + seconds
 
@@ -118,7 +136,7 @@ def random_search(csp, SOLUTION_FUNC, FITNESS_FUNC, limit):
         count += 1
 
     decoded = csp.decode(best_solution)
-    print(f"Best solution after {count} iterations, with fitness {best_cost}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]} \n[Random Search] {best_solution}\n")
+    print(f"Best solution after {count} iterations, with fitness {best_cost}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}\n{csp.get_solution_info(best_solution)}\n[Random Search]\n")
     return best_solution
 
 def evolution_search(csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit):
@@ -159,10 +177,9 @@ def evolution_search(csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit):
         generation += 1
 
     decoded = csp.decode(best_solution)
-    print(f"Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]} \n[EA Search] {best_solution}\n")
+    print(f"Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}\n{csp.get_solution_info(best_solution)}\n[EA Search]\n")
 
     return best_solution
-
 
 def mutate_3ps(individual):
     # item 1 select randomly from ordererd list
@@ -217,23 +234,17 @@ def mutate_3ps(individual):
 
 
 
-
-
-csp = CSP(18, 
-          [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
-          [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
-          8,
-          [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
-          [86, 85, 83, 79, 68, 66, 64, 63]
-          )
+# csp = CSP(18, 
+#           [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
+#           [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
+#           8,
+#           [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
+#           [86, 85, 83, 79, 68, 66, 64, 63]
+#           )
 # csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
-# csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
+csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
 # csp = CSP(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])
 
-# random_search(csp, csp.random_solution, csp.evaluate, 5.0)
-# solution = evolution_search(csp, 10, csp.random_solution, csp.evaluate, 3.0)
-# decoded = csp.decode(solution)
-# print(f"Total waste: {decoded["total_wastage"]}\nTotal cost: {decoded["total_cost"]}")
 
 t1 = Thread(target=random_search, args=(csp, csp.random_solution, csp.evaluate, 5.0))
 t2 = Thread(target=evolution_search, args=(csp, 15, csp.random_solution, csp.evaluate, 5.0))
