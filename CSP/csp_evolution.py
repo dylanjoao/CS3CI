@@ -131,7 +131,7 @@ def recombine_half(ind1, ind2):
 csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
 # csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 250])
 
-solution = evolution_search(csp, 50, csp.evaluate_cost, 59.0)
+solution = evolution_search(csp, 40, csp.evaluate_cost, 300.0)
 
 
 # random_search_solution = random_search(csp, csp.random_solution, csp.evaluate_cost, 1.0)
