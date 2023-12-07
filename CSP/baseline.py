@@ -11,7 +11,7 @@ class Individual:
         self.fitness = fitness_func(solution)
         self.wins = 0
 
-def random_search(csp, SOLUTION_FUNC, FITNESS_FUNC, limit):
+def random_search(out, csp, SOLUTION_FUNC, FITNESS_FUNC, limit, verbose=0):
     end = time() + limit # time + seconds
 
     count = 0
@@ -30,12 +30,18 @@ def random_search(csp, SOLUTION_FUNC, FITNESS_FUNC, limit):
         count += 1
 
     decoded = csp.decode(best_solution)
-    print(f"Best solution after {count} iterations, with fitness {best_cost}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}\n{csp.get_solution_info(best_solution)}\n[Random Search]\n")
+    info = ""
+    info += (f"[Random Search] Best solution after {count} iterations, with fitness {best_cost}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}")
+    if verbose: info += (f"\n{csp.get_solution_info(best_solution)}")
+    print(info)
+    
+    out.extend(best_solution)
+
     return best_solution
 
-def evolution_search(csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit):
+def evolution_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, verbose=0):
     end = time() + limit
-    generation = 0
+    generation = 1
     population = []
     
     for i in range(population_n):
@@ -73,12 +79,17 @@ def evolution_search(csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit):
             if winners[i].fitness < best_fitness:
                 best_solution = winners[i].solution
                 best_fitness = winners[i].fitness
-                print(f"Improved in gen {generation} with {best_fitness}")
+                if verbose > 0: print(f"Generation {generation} with fitness {best_fitness}")
 
         generation += 1
 
     decoded = csp.decode(best_solution)
-    print(f"Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}\n{csp.get_solution_info(best_solution)}\n[EA Search]\n")
+    info = ""
+    info += (f"[EA Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}")
+    if verbose > 1: info += (f"\n{csp.get_solution_info(best_solution)}")
+    print(info)
+
+    if type(out) == list: out.extend(best_solution)
 
     return best_solution
 
@@ -134,25 +145,36 @@ def mutate_3ps(individual):
     return offspring
 
 
-
-
-# csp = CSP(18, 
-#           [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
-#           [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
-#           8,
-#           [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
-#           [86, 85, 83, 79, 68, 66, 64, 63]
-#           )
+csp = CSP(18, 
+          [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
+          [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
+          8,
+          [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
+          [86, 85, 83, 79, 68, 66, 64, 63]
+          )
 # csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
-csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
+# csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
 # csp = CSP(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])
 
 
-t1 = Thread(target=random_search, args=(csp, csp.random_solution, csp.evaluate_cost, 5.0))
-t2 = Thread(target=evolution_search, args=(csp, 15, csp.random_solution, csp.evaluate_cost, 5.0))
+random_solution = []
+ea_solution = []
+
+threads = []
+
+duration = 5 * 60
+
+t1 = Thread(target=random_search, args=(random_solution, csp, csp.random_solution, csp.evaluate_waste, duration, 0))
+t2 = Thread(target=evolution_search, args=(ea_solution, csp, 15, csp.random_solution, csp.evaluate_waste, duration, 0))
+t4 = Thread(target=evolution_search, args=(ea_solution, csp, 15, csp.random_solution, csp.evaluate_cost, duration, 1))
+t6 = Thread(target=evolution_search, args=(ea_solution, csp, 15, csp.random_solution, csp.evaluate, duration, 0))
 
 t1.start()
 t2.start()
+t4.start()
+t6.start()
 
 t1.join()
 t2.join()
+t4.join()
+t6.join()

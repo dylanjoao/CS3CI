@@ -1,6 +1,6 @@
 
 from random import shuffle
-from math import sqrt
+from math import ceil, sqrt
 
 class CSP:
 
@@ -72,6 +72,44 @@ class CSP:
 
             if index >= len(solution): done = True
 
+        # largest_stock = max(self.stock_lengths)
+        # while not done:
+
+        #     # Accumulate the amounts under the stock lengths
+        #     # Collect data for comparison
+        #     accum = []
+        #     accum_count = [0 for i in range(self.stock_n)]
+            
+        #     for i in range(self.stock_n):
+        #         total = 0
+        #         while total <= largest_stock:
+        #             if total + solution[index] > largest_stock: break
+        #             total += solution[index]
+        #             accum_count[i] += 1
+
+        #         accum.append(total)
+
+
+        #     # Compare for best
+        #     best_wastage = float('inf')
+        #     best_cost = float('inf')
+        #     best_stock_index = None
+        #     for i in range(self.stock_n):
+        #         stock_amount_needed = ceil(accum[i]/self.stock_lengths[i])
+        #         wastage = (self.stock_lengths[i]*stock_amount_needed) % accum[i]
+        #         cost = stock_amount_needed * self.stock_costs[i]
+        #         if wastage < best_wastage:
+        #             best_wastage = wastage
+        #             best_cost = cost
+        #             best_stock_index = i
+
+        #     points.append({"point": index+accum_count[best_stock_index], "stock": self.stock_lengths[best_stock_index], "waste": best_wastage})
+        #     index += accum_count[best_stock_index]
+        #     total_wastage += best_wastage
+        #     total_cost += best_cost
+
+        #     if index >= len(solution): done = True
+
         return {"solution": points, "total_wastage": total_wastage, "total_cost": total_cost}
     
     # K.-H. Liang et al. / Computers & Operations Research 29 (2002) 1641-1659
@@ -98,6 +136,9 @@ class CSP:
 
     def evaluate_cost(self, solution):
         return self.decode(solution)["total_cost"]
+    
+    def evaluate_waste(self, solution):
+        return self.decode(solution)["total_wastage"]
 
     def get_solution_info(self, solution):
         decoded = self.decode(solution)
@@ -105,13 +146,14 @@ class CSP:
         costs = [self.stock_costs[self.stock_lengths.index(info["stock"])] for info in decoded["solution"]]
         lengths = [info["stock"] for info in decoded["solution"]]
         wastages = [info["waste"] for info in decoded["solution"]]
+    
+        result = " ".join("{:<2}".format(solution[i]) if i not in cutting_points else "| {:<2}".format(solution[i]) for i in range(len(solution)))
 
         info = ""
-        info += ("Solution:    {}\n".format(solution))
-        info += ("Cost:        | {} |\n".format(" | ".join("{:3}".format(cost) for cost in costs)))
+        info += ("Solution:    | {} |\n".format(result))
         info += ("Length:      | {} |\n".format(" | ".join("{:3}".format(length) for length in lengths)))
-        info += ("Wastage:     | {} |".format(" | ".join("{:3}".format(wastage) for wastage in wastages)))
-
+        info += ("Wastage:     | {} | ={}\n".format(" | ".join("{:3}".format(wastage) for wastage in wastages), decoded["total_wastage"]))
+        info += ("Cost:        | {} | ={}\n".format(" | ".join("{:3}".format(cost) for cost in costs), decoded["total_cost"]))
+        info += ("Index:       | {} |".format(" | ".join("{:3}".format(i) for i in range(len(lengths)))))
+        info += (f"\n{cutting_points}\n")
         return info
-
-
