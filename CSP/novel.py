@@ -11,7 +11,7 @@ class Chromosone:
     def __init__(self):
         self.genes = []
 
-    def init_from_solution(self, decode_func, solution):
+    def to_chromosone(self, decode_func, solution):
         decoded = decode_func(solution)
         decoded_solution = decoded["solution"]
 
@@ -22,6 +22,12 @@ class Chromosone:
             current = decoded_solution[i]["point"]
             next = decoded_solution[i+1]["point"]
             self.genes.append(Gene(solution[current:next]))
+
+    def get_solution(self):
+        s = []
+        for i in range(len(self.genes)):
+            s += self.genes[i].gene
+        return s
 
 # Gene contains patterns of solution
 class Gene:
@@ -45,33 +51,52 @@ def novel_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, ver
         #   generate chromosone
         # c = Chromosone(csp.decode, SOLUTION_FUNC())
         chromosone = Chromosone()
-        chromosone.init_from_solution(csp.decode, [5, 4, 6, 3, 3, 4, 6, 6, 3, 5, 6, 3])
-        fit_genes = [ 0 for i in range(len(chromosone.genes)) ]
+        chromosone.to_chromosone(csp.decode, [5, 4, 6, 3, 3, 4, 6, 6, 3, 5, 6, 3])
+        chromosone_waste = csp.decode(chromosone.get_solution())["total_wastage"]
+
+        fit_genes_index = [ 0 for i in range(len(chromosone.genes)) ]
         has_fit_genes = False
 
-        remaining = []
-        child = []
+        fit_chromosone = []
+        remaining_chromosone = []
+        child_chromosone = []
+        point = 0
 
         # keep genes that produce 0 waste
         while not has_fit_genes:
             for i in range(len(chromosone.genes)):
                 decoded = csp.decode(chromosone.genes[i].gene)
                 if decoded["total_wastage"] > 0: 
-                    remaining.append(chromosone.genes[i])
+                    remaining_chromosone += chromosone.genes[i].gene
                     continue
                 has_fit_genes = True
-                fit_genes[i] = 1
-                if chromosone.genes[i] not in child:
-                    child.append(chromosone.genes[i])
+                fit_genes_index[i] = 1
+                fit_chromosone += chromosone.genes[i].gene
+
+        k = 0
+        local_chromosone = None
+        local_chromosone_waste = float('inf')
+        while k < 30:
+            mutated = mutate_3ps(remaining_chromosone)
+            c = fit_chromosone+mutated
+            d = csp.decode(c)
+            if d["total_wastage"] < local_chromosone_waste:
+                local_chromosone = c
+                local_chromosone_waste = d["total_wastage"]
+                k = 0
+
+                
+
+            else: k+=1
 
         # combine any genes capable of making a fit gene from the above list
-        for item1, item2 in itertools.combinations( enumerate(remaining), 2):
-            combined = item1[1].gene + item2[1].gene
-            for i in fit_genes:
-                if not i: continue
-                if combined == chromosone.genes[i].gene:
-                    print("true")
-                    child.append(Gene(combined))
+        # for item1, item2 in itertools.combinations( enumerate(remaining), 2):
+        #     combined = item1[1].gene + item2[1].gene
+        #     for i in fit_genes:
+        #         if not i: continue
+        #         if combined == chromosone.genes[i].gene:
+        #             print("true")
+        #             child.append(Gene(combined))
                     
         
 
