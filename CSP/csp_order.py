@@ -77,6 +77,7 @@ class CSP:
             for i in range(best_amount_needed):
                 total = 0
                 while total < self.stock_lengths[best_stock_index]:
+                    if temp_index == len(solution): break
                     if total + solution[temp_index] > self.stock_lengths[best_stock_index]: break
                     total += solution[temp_index]
                     temp_index += 1
@@ -144,6 +145,3 @@ class CSP:
         info += ("Index:       | {} |".format(" | ".join("{:3}".format(i) for i in range(len(lengths)))))
         info += (f"\n{cutting_points}\n")
         return info
-
-csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
-print(csp.get_solution_info([30, 20, 25, 25, 30, 20, 25, 25, 20, 30, 30, 25, 20, 30, 20, 25, 25]))
