@@ -3,7 +3,7 @@ from copy import copy
 from random import shuffle, randint, choices
 from math import sqrt
 from time import time
-from threading import Thread
+import argparse
 
 class Individual:
     def __init__(self, fitness_func, solution):
@@ -160,21 +160,20 @@ csp = CSP(18,
 random_solution = []
 ea_solution = []
 
-threads = []
 
-duration = 5 * 60
+argParser = argparse.ArgumentParser()
+argParser.add_argument("-e", "--evaluation", help="e.g. fitness, cost, waste, costwaste", required=True)
+argParser.add_argument("-p", "--population", help="Number of inital population", type=int, default=20)
+argParser.add_argument("-t", "--time", help="Duration to run the algorithm", type=float, default=5.0)
+argParser.add_argument("-v", "--verbose", help="Print information", type=int, default=1)
 
-t1 = Thread(target=random_search, args=(random_solution, csp, csp.random_solution, csp.evaluate_waste, duration, 0))
-t2 = Thread(target=evolution_search, args=(ea_solution, csp, 15, csp.random_solution, csp.evaluate_waste, duration, 0))
-t4 = Thread(target=evolution_search, args=(ea_solution, csp, 15, csp.random_solution, csp.evaluate_cost, duration, 1))
-t6 = Thread(target=evolution_search, args=(ea_solution, csp, 15, csp.random_solution, csp.evaluate, duration, 0))
+args = argParser.parse_args()
+evaluation = None
 
-t1.start()
-t2.start()
-t4.start()
-t6.start()
+match args.evaluation:
+    case "fitness": evaluation = csp.evaluate
+    case "cost": evaluation = csp.evaluate_cost
+    case "waste": evaluation = csp.evaluate_waste
+    case "costwaste": evaluation = csp.evaluate_cost_waste
 
-t1.join()
-t2.join()
-t4.join()
-t6.join()
+evolution_search(ea_solution, csp, args.population, csp.random_solution, evaluation, args.time, args.verbose)

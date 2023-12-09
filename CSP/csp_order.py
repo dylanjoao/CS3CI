@@ -98,6 +98,7 @@ class CSP:
         #         stock_amount_needed = ceil(accum[i]/self.stock_lengths[i])
         #         wastage = (self.stock_lengths[i]*stock_amount_needed) % accum[i]
         #         cost = stock_amount_needed * self.stock_costs[i]
+        
         #         if wastage < best_wastage:
         #             best_wastage = wastage
         #             best_cost = cost
@@ -139,6 +140,10 @@ class CSP:
     
     def evaluate_waste(self, solution):
         return self.decode(solution)["total_wastage"]
+
+    def evaluate_cost_waste(self, solution):
+        d = self.decode(solution)
+        return d["total_cost"] + d["total_wastage"]
 
     def get_solution_info(self, solution):
         decoded = self.decode(solution)
