@@ -28,9 +28,8 @@ class CSP:
         shuffle(items)
         return items
 
-    # 5  4  6  3  3  4  6  6  
+
     # return cutting points, wastage, cost
-    # greedy search 
     def decode(self, solution):
         points = []
         total_wastage = 0
@@ -39,77 +38,60 @@ class CSP:
         index = 0
         done = False
 
+        largest_stock = max(self.stock_lengths)
         while not done:
 
             # Accumulate the amounts under the stock lengths
-            accum = []
-            accum_count = [0 for i in range(self.stock_n)]
-            for i in range(self.stock_n):
-                total = 0
-                # For each value in solution
-                for j in range(index, len(solution)):
-                    # If total goes over stock length stop
-                    if total + solution[j] > self.stock_lengths[i]: break
-                    # Else add to total
-                    total += solution[j]
-                    accum_count[i] += 1
+            # Collect data for comparison
+            accum = 0
 
-                accum.append(total)
-            
-            # Choose best option based on wastage
+            temp_index = index
+            while accum < largest_stock:
+                if temp_index == len(solution): break
+                if accum + solution[temp_index] > largest_stock: break
+                accum += solution[temp_index]
+                temp_index += 1
+
+            # Compare for best
             best_wastage = float('inf')
+            best_cost = float('inf')
             best_stock_index = None
+            best_amount_needed = 0
             for i in range(self.stock_n):
-                wastage = self.stock_lengths[i] - accum[i]
-                if wastage < best_wastage:
+                stock_amount_needed = ceil(accum/self.stock_lengths[i])
+                wastage = (self.stock_lengths[i]*stock_amount_needed) % accum
+                cost = stock_amount_needed * self.stock_costs[i]
+        
+                if wastage < best_wastage or (wastage == best_wastage and cost < best_cost):
                     best_wastage = wastage
+                    best_cost = cost
                     best_stock_index = i
+                    best_amount_needed = stock_amount_needed
+
+
+            # Append the correct number of points
+            cutting_points = []
+            cutting_waste = []
             
-            points.append({"point": index+accum_count[best_stock_index], "stock": self.stock_lengths[best_stock_index], "waste": best_wastage})
-            index += accum_count[best_stock_index]
+            temp_index = index
+            for i in range(best_amount_needed):
+                total = 0
+                while total < self.stock_lengths[best_stock_index]:
+                    if total + solution[temp_index] > self.stock_lengths[best_stock_index]: break
+                    total += solution[temp_index]
+                    temp_index += 1
+                    
+                cutting_points.append(temp_index)
+                cutting_waste.append(self.stock_lengths[best_stock_index]-total)
+                
+            for i in range(len(cutting_points)):
+                points.append({"point": cutting_points[i], "stock": self.stock_lengths[best_stock_index], "waste": cutting_waste[i]})
+
+            index = cutting_points[-1]
             total_wastage += best_wastage
-            total_cost += self.stock_costs[best_stock_index]
+            total_cost += best_cost
 
             if index >= len(solution): done = True
-
-        # largest_stock = max(self.stock_lengths)
-        # while not done:
-
-        #     # Accumulate the amounts under the stock lengths
-        #     # Collect data for comparison
-        #     accum = []
-        #     accum_count = [0 for i in range(self.stock_n)]
-            
-        #     for i in range(self.stock_n):
-        #         total = 0
-        #         while total <= largest_stock:
-        #             if total + solution[index] > largest_stock: break
-        #             total += solution[index]
-        #             accum_count[i] += 1
-
-        #         accum.append(total)
-
-
-        #     # Compare for best
-        #     best_wastage = float('inf')
-        #     best_cost = float('inf')
-        #     best_stock_index = None
-        #     for i in range(self.stock_n):
-        #         stock_amount_needed = ceil(accum[i]/self.stock_lengths[i])
-        #         wastage = (self.stock_lengths[i]*stock_amount_needed) % accum[i]
-        #         cost = stock_amount_needed * self.stock_costs[i]
-        
-        #         if wastage < best_wastage:
-        #             best_wastage = wastage
-        #             best_cost = cost
-        #             best_stock_index = i
-
-        #     points.append({"point": index+accum_count[best_stock_index], "stock": self.stock_lengths[best_stock_index], "waste": best_wastage})
-        #     index += accum_count[best_stock_index]
-        #     total_wastage += best_wastage
-        #     total_cost += best_cost
-
-        #     if index >= len(solution): done = True
 
         return {"solution": points, "total_wastage": total_wastage, "total_cost": total_cost}
     
@@ -162,3 +144,6 @@ class CSP:
         info += ("Index:       | {} |".format(" | ".join("{:3}".format(i) for i in range(len(lengths)))))
         info += (f"\n{cutting_points}\n")
         return info
+
+csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
+print(csp.get_solution_info([30, 20, 25, 25, 30, 20, 25, 25, 20, 30, 30, 25, 20, 30, 20, 25, 25]))
