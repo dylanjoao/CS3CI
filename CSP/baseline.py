@@ -40,6 +40,7 @@ def random_search(out, csp, SOLUTION_FUNC, FITNESS_FUNC, limit, verbose=0):
     return best_solution
 
 def evolution_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, verbose=0):
+    start = time()
     end = time() + limit
     generation = 1
     population = []
@@ -79,13 +80,13 @@ def evolution_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit,
             if winners[i].fitness < best_fitness:
                 best_solution = winners[i].solution
                 best_fitness = winners[i].fitness
-                if verbose > 0: print(f"Generation {generation} with fitness {best_fitness}")
+                if verbose > 0: print(f"Generation {generation} with fitness {best_fitness} after {(time()-start):.2f}s")
 
         generation += 1
 
     decoded = csp.decode(best_solution)
     info = ""
-    info += (f"[EA Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}")
+    info += (f"[EA Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]} after {(time()-start):.2f}s")
     if verbose > 1: info += (f"\n{csp.get_solution_info(best_solution)}")
     print(info)
 
@@ -145,13 +146,21 @@ def mutate_3ps_weighted(individual):
     return offspring
 
 
-csp = CSP(18, 
-          [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
-          [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
-          8,
-          [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
-          [86, 85, 83, 79, 68, 66, 64, 63]
+
+csp = CSP(36, 
+          [21, 22, 24, 25, 27, 29, 30, 31, 32, 33, 34, 35, 38, 39, 42, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60, 61, 63, 65, 66, 67],
+          [13, 15, 7, 5, 9, 9, 3, 15, 18, 17, 4, 17, 20, 9, 4, 19, 4, 12, 15, 3, 20, 14, 15, 6, 4, 7, 5, 19, 19, 6, 3, 7, 20, 5, 10, 17],
+          5,
+          [120, 115, 110, 105, 100],
+          [12, 11.5, 11, 10.5, 10]
           )
+# csp = CSP(18, 
+#           [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
+#           [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
+#           8,
+#           [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
+#           [86, 85, 83, 79, 68, 66, 64, 63]
+#           )
 # csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
 # csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
 # csp = CSP(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])

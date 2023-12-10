@@ -6,10 +6,11 @@ from math import ceil, sqrt
 from time import time
 import argparse
 
-def novel_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, verbose=0):
+def novel_search(out, csp, population_n, max_age, SOLUTION_FUNC, FITNESS_FUNC, limit, verbose=0):
+    start = time()
     end = time() + limit
     generation = 0
-    population = [SOLUTION_FUNC() for _ in range(population_n)]
+    population = [[SOLUTION_FUNC(), 0] for _ in range(population_n)]
 
     best_solution = None
     best_fitness = float('inf')
@@ -20,28 +21,33 @@ def novel_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, ver
 
         # Produce offspring
         for i in range(population_n):
-            s = genetic_offspring(population[i], csp)
-            offsprings.append(s)
+            s = genetic_offspring(population[i][0], csp)
+            offsprings.append([s, population[i][1]])
 
         # Select parents based on fitness
         parents = []
         for i in range(len(offsprings)):
-            fitness = FITNESS_FUNC(offsprings[i])
+            fitness = FITNESS_FUNC(offsprings[i][0])
+            offsprings[i][1] += 1
             parents.append((offsprings[i], fitness))
             if fitness < best_fitness:
                 best_fitness = fitness
-                best_solution = offsprings[i]
-                if verbose > 0: print(f"Generation {generation} with fitness {best_fitness}")
+                best_solution = offsprings[i][0]
+                if verbose > 0: print(f"Generation {generation} with fitness {best_fitness} after {(time()-start):.2f}s")
 
 
         parents.sort(key=lambda x: x[1], reverse=False)
         population = [ x[0] for x in parents[:population_n] ]
 
+        for i in range(len(population)):
+            if population[i][1] > max_age:
+                population[i] = [SOLUTION_FUNC(), 0]
+
         generation += 1
 
     decoded = csp.decode(best_solution)
     info = ""
-    info += (f"[Novel Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}")
+    info += (f"[Novel Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]} after {(time()-start):.2f}s")
     if verbose > 1: info += (f"\n{csp.get_solution_info(best_solution)}")
     print(info)
 
@@ -72,6 +78,7 @@ def genetic_offspring(solution, csp):
     best_mutation = None
     best_mutation_wastage = float('inf')
     k = 0
+    
     while k < 30:
         # Mutate leftover
         mutated = mutate_3ps(chromosone_leftover)
@@ -88,7 +95,6 @@ def genetic_offspring(solution, csp):
             chromosone_child += _combined
             chromosone_leftover = _c_leftover
     
-
         if d["total_wastage"] < best_mutation_wastage:
             best_mutation = mutated
             best_mutation_wastage = d["total_wastage"]
@@ -158,13 +164,20 @@ def mutate_3ps(individual):
 
     return offspring
 
-csp = CSP_Novel(18, 
-          [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
-          [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
-          8,
-          [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
-          [86, 85, 83, 79, 68, 66, 64, 63]
+csp = CSP_Novel(36, 
+          [21, 22, 24, 25, 27, 29, 30, 31, 32, 33, 34, 35, 38, 39, 42, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60, 61, 63, 65, 66, 67],
+          [13, 15, 7, 5, 9, 9, 3, 15, 18, 17, 4, 17, 20, 9, 4, 19, 4, 12, 15, 3, 20, 14, 15, 6, 4, 7, 5, 19, 19, 6, 3, 7, 20, 5, 10, 17],
+          5,
+          [120, 115, 110, 105, 100],
+          [12, 11.5, 11, 10.5, 10]
           )
+# csp = CSP_Novel(18, 
+#           [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
+#           [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
+#           8,
+#           [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
+#           [86, 85, 83, 79, 68, 66, 64, 63]
+#           )
 # csp = CSP_Novel(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
 # csp = CSP_Novel(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
 # csp = CSP_Novel(4, [3, 4, 5, 6], [4, 2, 2, 4], 1, [12], [100])
@@ -174,7 +187,8 @@ novel_solution = []
 
 argParser = argparse.ArgumentParser()
 argParser.add_argument("-e", "--evaluation", help="e.g. fitness, cost, waste, costwaste", required=True)
-argParser.add_argument("-p", "--population", help="Number of inital population", type=int, default=20)
+argParser.add_argument("-p", "--population", help="Number of inital population", type=int, default=5)
+argParser.add_argument("-a", "--age", help="Maximum age of each individual", type=int, default=2)
 argParser.add_argument("-t", "--time", help="Duration to run the algorithm", type=float, default=5.0)
 argParser.add_argument("-v", "--verbose", help="Print information", type=int, default=1)
 
@@ -187,9 +201,11 @@ match args.evaluation:
     case "waste": evaluation = csp.evaluate_waste
     case "costwaste": evaluation = csp.evaluate_cost_waste
 
-novel_search(novel_solution, csp, args.population, csp.random_solution, evaluation, args.time, args.verbose)
+novel_search(novel_solution, csp, args.population, args.age, csp.random_solution, evaluation, args.time, args.verbose)
 
-# python novel.py -e fitness -p 20 -t 60.0 -v 1
+# novel_search(novel_solution, csp, 5, 3, csp.random_solution, csp.evaluate, 300.0, 1)
+
+# python novel.py -e fitness -p 5 -a 2 -t 100.0 -v 1
 
 
 
