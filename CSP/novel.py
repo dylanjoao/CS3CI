@@ -6,104 +6,78 @@ from math import ceil, sqrt
 from time import time
 import argparse
 
-# Chromosone contains genes
-class Chromosone:
-    def __init__(self):
-        self.genes = []
-
-    def to_chromosone(self, decode_func, solution):
-        decoded = decode_func(solution)
-        decoded_solution = decoded["solution"]
-
-        gene = solution[0:decoded_solution[0]["point"]]
-        self.genes.append(Gene(gene))
-
-        for i in range(len(decoded_solution)-1):
-            current = decoded_solution[i]["point"]
-            next = decoded_solution[i+1]["point"]
-            self.genes.append(Gene(solution[current:next]))
-
-    def get_solution(self):
-        s = []
-        for i in range(len(self.genes)):
-            s += self.genes[i].gene
-        return s
-
-# Gene contains patterns of solution
-class Gene:
-    def __init__(self, pattern):
-        self.gene = pattern
-
-
 def novel_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, verbose=0):
     end = time() + limit
-    generation = 1
+    generation = 0
 
     best_solution = None
     best_fitness = float('inf')
 
-    # while generation < limit:
-    while time() < end:
+    while generation < limit:
+    # while time() < end:
         
-        prev_gen_best_chromosone = None
-
-        # while no fit genes
-        #   generate chromosone
-        # c = Chromosone(csp.decode, SOLUTION_FUNC())
-        chromosone = Chromosone()
-        chromosone.to_chromosone(csp.decode, [5, 4, 6, 3, 3, 4, 6, 6, 3, 5, 6, 3])
-        chromosone_waste = csp.decode(chromosone.get_solution())["total_wastage"]
-
-        fit_genes_index = [ 0 for i in range(len(chromosone.genes)) ]
+        chromosone = None
         has_fit_genes = False
 
-        fit_chromosone = []
-        remaining_chromosone = []
-        child_chromosone = []
-        point = 0
+        genes_fit = []
+        genes_unfit = []
+        chromosone_leftover = []
+        chromosone_child = []
 
-        # keep genes that produce 0 waste
+        # Obtain fit genes
         while not has_fit_genes:
-            for i in range(len(chromosone.genes)):
-                decoded = csp.decode(chromosone.genes[i].gene)
-                if decoded["total_wastage"] > 0: 
-                    remaining_chromosone += chromosone.genes[i].gene
+            chromosone = [6, 3, 3, 5, 4, 4, 6, 6, 3, 5, 6, 3]
+            d = csp.decode(chromosone)
+            for i in range(len(d["solution"])):
+                gene = chromosone[0 if i == 0 else d["solution"][i-1]["point"]:d["solution"][i]["point"]]
+                if d["solution"][i]["waste"] > 0: 
+                    genes_unfit.append(gene)
                     continue
                 has_fit_genes = True
-                fit_genes_index[i] = 1
-                fit_chromosone += chromosone.genes[i].gene
-
-        k = 0
-        local_chromosone = None
-        local_chromosone_waste = float('inf')
-        while k < 30:
-            mutated = mutate_3ps(remaining_chromosone)
-            c = fit_chromosone+mutated
-            d = csp.decode(c)
-            if d["total_wastage"] < local_chromosone_waste:
-                local_chromosone = c
-                local_chromosone_waste = d["total_wastage"]
-                k = 0
-
-                
-
-            else: k+=1
-
-        # combine any genes capable of making a fit gene from the above list
-        # for item1, item2 in itertools.combinations( enumerate(remaining), 2):
-        #     combined = item1[1].gene + item2[1].gene
-        #     for i in fit_genes:
-        #         if not i: continue
-        #         if combined == chromosone.genes[i].gene:
-        #             print("true")
-        #             child.append(Gene(combined))
+                chromosone_child += gene
+                if gene not in genes_fit: genes_fit.append(gene)
+        
+        # Find any combinations to form fit genes
+        for geneA, geneB in itertools.combinations( enumerate(genes_unfit), 2 ):
+            for fit_gene in genes_fit:
+                new_gene = geneA[1] + geneB[1]
+                if sorted(new_gene) == sorted(fit_gene):
+                    # Append to chromosone_child and pop from chromosone_leftover
+                    chromosone_child += new_gene
+                    genes_unfit.pop(geneA[0])
+                    genes_unfit.pop(geneB[0]-1)
                     
+        for unfit_gene in genes_unfit:
+            chromosone_leftover += unfit_gene
+
+        # Evolve left over chromosone to obtain fit genes
+
+        best_mutation = None
+        best_mutation_waste = float('inf')
         
+        k = 0
+        while k < 30:
+            mutated = mutate_3ps(chromosone_leftover)
+            d = csp.decode(mutated)
+            waste = d["total_wastage"]
+
+            # Check for fit genes in the leftover space
+            for i in range(len(d["solution"])):
+                gene = chromosone[0 if i == 0 else d["solution"][i-1]["point"]:d["solution"][i]["point"]]
+                if d["solution"][i]["waste"] > 0: continue  # If gene waste is not 0 skip
+                if gene in genes_fit: continue     # If gene already in leftover skip
+                genes_fit.append(gene)
+            
+            if waste < best_mutation_waste:
+                best_mutation = mutated
+                best_mutation_waste = waste
+                k = 0
+            else:
+                k += 1
+
 
 
         # combine any genes capable of making a fit gene from the above list
-        
-
 
         # keep genes that produce 0 waste
         # combine any genes capable of making a fit gene from the above list
@@ -115,13 +89,13 @@ def novel_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, ver
 
         generation += 1
 
-    decoded = csp.decode(best_solution)
-    info = ""
-    info += (f"[Novel Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}")
-    if verbose > 1: info += (f"\n{csp.get_solution_info(best_solution)}")
-    print(info)
+    # decoded = csp.decode(best_solution)
+    # info = ""
+    # info += (f"[Novel Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}")
+    # if verbose > 1: info += (f"\n{csp.get_solution_info(best_solution)}")
+    # print(info)
 
-    if type(out) == list: out.extend(best_solution)
+    # if type(out) == list: out.extend(best_solution)
 
     return best_solution
 
@@ -192,10 +166,14 @@ csp = CSP_Novel(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])
 # c = Chromosone(csp.evaluate, csp.decode, [30, 20, 25, 30, 25, 20, 25, 25, 20, 30, 30, 25, 20, 30, 20, 25, 25] )
 # print(csp.get_solution_info([30, 20, 25, 25, 30, 20, 25, 25, 20, 30, 30, 25, 20, 30, 20, 25, 25]))
 
-
 novel_solution = []
 
-novel_search(novel_solution, csp, 20, csp.random_solution, csp.evaluate, 5.0, 1)
+novel_search(novel_solution, csp, 20, csp.random_solution, csp.evaluate, 1.0, 1)
+
+l = [5, 6, 9, 12, 1, 0]
+l.pop(2)
+l.pop(4-1)
+print(l)
 
 # argParser = argparse.ArgumentParser()
 # argParser.add_argument("-e", "--evaluation", help="e.g. fitness, cost, waste, costwaste", required=True)
