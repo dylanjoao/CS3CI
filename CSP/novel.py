@@ -1,7 +1,7 @@
 import itertools
 from csp_order import CSP_Novel
 from copy import copy
-from random import shuffle, randint, choices
+from random import shuffle, randint, choices, sample
 from math import ceil, sqrt
 from time import time
 import argparse
@@ -9,147 +9,148 @@ import argparse
 def novel_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, verbose=0):
     end = time() + limit
     generation = 0
+    population = [SOLUTION_FUNC() for _ in range(population_n)]
 
     best_solution = None
     best_fitness = float('inf')
 
-    while generation < limit:
-    # while time() < end:
-        
-        chromosone = None
-        has_fit_genes = False
+    # while generation < limit:
+    while time() < end:
+        offsprings = []
 
-        genes_fit = []
-        genes_unfit = []
-        chromosone_leftover = []
-        chromosone_child = []
+        # Produce offspring
+        for i in range(population_n):
+            s = genetic_offspring(population[i], csp)
+            offsprings.append(s)
 
-        # Obtain fit genes
-        while not has_fit_genes:
-            chromosone = [6, 3, 3, 5, 4, 4, 6, 6, 3, 5, 6, 3]
-            d = csp.decode(chromosone)
-            for i in range(len(d["solution"])):
-                gene = chromosone[0 if i == 0 else d["solution"][i-1]["point"]:d["solution"][i]["point"]]
-                if d["solution"][i]["waste"] > 0: 
-                    genes_unfit.append(gene)
-                    continue
-                has_fit_genes = True
-                chromosone_child += gene
-                if gene not in genes_fit: genes_fit.append(gene)
-        
-        # Find any combinations to form fit genes
-        for geneA, geneB in itertools.combinations( enumerate(genes_unfit), 2 ):
-            for fit_gene in genes_fit:
-                new_gene = geneA[1] + geneB[1]
-                if sorted(new_gene) == sorted(fit_gene):
-                    # Append to chromosone_child and pop from chromosone_leftover
-                    chromosone_child += new_gene
-                    genes_unfit.pop(geneA[0])
-                    genes_unfit.pop(geneB[0]-1)
-                    
-        for unfit_gene in genes_unfit:
-            chromosone_leftover += unfit_gene
+        # Select parents based on fitness
+        parents = []
+        for i in range(offsprings):
+            parents.append((offsprings[i], FITNESS_FUNC(offsprings[i])))
+        parents.sort(key=lambda x: x[1], reverse=True)
 
-        # Evolve left over chromosone to obtain fit genes
-
-        best_mutation = None
-        best_mutation_waste = float('inf')
-        
-        k = 0
-        while k < 30:
-            mutated = mutate_3ps(chromosone_leftover)
-            d = csp.decode(mutated)
-            waste = d["total_wastage"]
-
-            # Check for fit genes in the leftover space
-            for i in range(len(d["solution"])):
-                gene = chromosone[0 if i == 0 else d["solution"][i-1]["point"]:d["solution"][i]["point"]]
-                if d["solution"][i]["waste"] > 0: continue  # If gene waste is not 0 skip
-                if gene in genes_fit: continue     # If gene already in leftover skip
-                genes_fit.append(gene)
-            
-            if waste < best_mutation_waste:
-                best_mutation = mutated
-                best_mutation_waste = waste
-                k = 0
-            else:
-                k += 1
-
-
-
-        # combine any genes capable of making a fit gene from the above list
-
-        # keep genes that produce 0 waste
-        # combine any genes capable of making a fit gene from the above list
-        # create a child chromosone with only fit genes
-
-        # evolve (mutate?) the leftover chromosone (meaning exclude the fit genes only the unfit genes)
-        #   if the number of evolutions that results in more or same total wastage
-
+        population = parents[:population_n]
 
         generation += 1
 
-    # decoded = csp.decode(best_solution)
-    # info = ""
-    # info += (f"[Novel Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}")
-    # if verbose > 1: info += (f"\n{csp.get_solution_info(best_solution)}")
-    # print(info)
+    decoded = csp.decode(best_solution)
+    info = ""
+    info += (f"[Novel Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]}")
+    if verbose > 1: info += (f"\n{csp.get_solution_info(best_solution)}")
+    print(info)
 
     # if type(out) == list: out.extend(best_solution)
 
     return best_solution
 
-def mutate_3ps(individual):
-    # item 1 select randomly from ordererd list
-    # item 2 and 3
-    # - select stock cut with weighted probabilty
-    # - select random item within stock cut
+def genetic_offspring(solution, csp):
+    chromosone = solution
+
+    start_summation = sum(solution)
+
+    genes_fit = []
+    genes_leftover = []
+    chromosone_child = []
+    chromosone_leftover = []
+
+    # Check and obtain fit genes
+    genes_fit, genes_leftover, chromosone_child, chromosone_leftover = obtain_genes(chromosone, csp)
     
-    decoded = csp.decode(individual)
-    offspring = copy(individual)
-    solution_length = len(decoded["solution"])
-    weights = [ 0 for _ in range(solution_length)]
+    if len(genes_fit) == 0: return mutate_3ps(solution)
+
+    # Try to combine to form fit genes
+    combined, chromosone_leftover = combine_for_fit(genes_leftover, genes_fit)
+    chromosone_child += combined
+
+    # Local chromosone mutation loop
+    best_mutation = None
+    best_mutation_wastage = float('inf')
+    k = 0
+    while k < 30:
+        # Mutate leftover
+        mutated = mutate_3ps(chromosone_leftover)
+        d = csp.decode(mutated)
+
+        # Find fit genes and append to child
+        _fit_genes, _unfit_genes, _c_child, _c_leftover = obtain_genes(mutated, csp)
+        chromosone_child += _c_child
+        chromosone_leftover = _c_leftover
+
+        # Try to combine to form fit genes
+        if (len(_fit_genes) > 0):
+            _combined, _c_leftover = combine_for_fit(_unfit_genes, _fit_genes+genes_fit)
+            chromosone_child += _combined
+            chromosone_leftover = _c_leftover
     
-    w_all = 0
 
-    wastage_percent = 0
-
-    for i in range(solution_length):
-        if not decoded["solution"][i]["waste"] == 0:
-            w_all += sqrt(1/decoded["solution"][i]["waste"])
-
-    for j in range(solution_length):
-        w = decoded["solution"][j]["waste"]            # Wastage of the jth stock
-        if w == 0: continue
-        weights[j] = sqrt(1/w)/w_all
-
-    indexes = [randint(0, len(individual)-1)]
-    
-    done = False
-
-    for _ in range(2):
-
-        if sum(weights) == 0.0:
-            stock_index = randint(0, solution_length-1)
+        if d["total_wastage"] < best_mutation_wastage:
+            best_mutation = mutated
+            best_mutation_wastage = d["total_wastage"]
+            k = 0
         else:
-            stock_index = choices(range(solution_length), weights=weights)[0]
+            k += 1
 
-        stock = decoded["solution"][stock_index]
-        stock_next = decoded["solution"][(stock_index%(solution_length-1))+1]
-        points = [stock["point"], stock_next["point"]]
-        points = sorted(points)
-        index = randint(points[0], points[1]-1)
+    full_chromosone = chromosone_child + chromosone_leftover
+    summation = sum(full_chromosone)
 
-        # if index not in indexes:
-        indexes.append(index)
-        # if len(indexes) == 3:
-        #     break
+    return full_chromosone
 
-    for i in range(1, len(indexes)):
-        offspring[indexes[i - 1]], offspring[indexes[i]] = offspring[indexes[i]], offspring[indexes[i - 1]]
+def obtain_genes(chromosone, csp):
+    decoded = csp.decode(chromosone)
+
+    genes_fit = []
+    genes_leftover = []
+    chromosone_child = []
+    chromosone_leftover = []
+
+    # Check and obtain fit genes
+    for i in range(len(decoded["solution"])):
+        gene = chromosone[0 if i == 0 else decoded["solution"][i-1]["point"]:decoded["solution"][i]["point"]]
+        if decoded["solution"][i]["waste"] > 0:
+            genes_leftover.append(gene)
+            chromosone_leftover += gene
+            continue
+
+        chromosone_child += gene
+        exists = False
+        for _fit_gene in genes_fit:
+            if sorted(gene) == sorted(_fit_gene): exists = True
+        if not exists:
+            genes_fit.append(gene)
+        
+    return genes_fit, genes_leftover, chromosone_child, chromosone_leftover
+
+def combine_for_fit(genes_leftover, genes_fit):
+    chromosone = []
+    genes_leftover_copy = genes_leftover.copy()
+    chromosone_leftover = []
+    to_be_popped = []
+
+    for geneA, geneB in itertools.combinations( enumerate(genes_leftover), 2 ):
+        for _fit_gene in genes_fit:
+            _new_gene = geneA[1] + geneB[1]
+            if sorted(_new_gene) == sorted(_fit_gene):
+                # Append to chromosone_child and pop from chromosone_leftover
+                chromosone += _new_gene
+                to_be_popped.append(geneA[0])
+                to_be_popped.append(geneB[0])
+
+    for i in range(len(to_be_popped)):
+        genes_leftover_copy.pop(to_be_popped[i]-i)
+    
+    for i in range(len(genes_leftover_copy)):
+        chromosone_leftover += genes_leftover_copy[i]
+
+    return chromosone, chromosone_leftover
+
+def mutate_3ps(individual):
+    if len(individual) < 3: return individual
+    offspring = individual.copy()
+    indexes = sample(range(len(offspring)), 3)
+    offspring[indexes[0]], offspring[indexes[1]], offspring[indexes[2]] = \
+        offspring[indexes[2]], offspring[indexes[0]], offspring[indexes[1]]
 
     return offspring
-
 
 # csp = CSP_Novel(18, 
 #           [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
@@ -160,20 +161,23 @@ def mutate_3ps(individual):
 #           )
 # csp = CSP_Novel(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
 # csp = CSP_Novel(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
-# csp = CSP_Novel(4, [3, 4, 5, 6], [4, 2, 2, 4], 1, [12], [100])
-csp = CSP_Novel(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])
+csp = CSP_Novel(4, [3, 4, 5, 6], [4, 2, 2, 4], 1, [12], [100])
 
 # c = Chromosone(csp.evaluate, csp.decode, [30, 20, 25, 30, 25, 20, 25, 25, 20, 30, 30, 25, 20, 30, 20, 25, 25] )
 # print(csp.get_solution_info([30, 20, 25, 25, 30, 20, 25, 25, 20, 30, 30, 25, 20, 30, 20, 25, 25]))
 
 novel_solution = []
 
-novel_search(novel_solution, csp, 20, csp.random_solution, csp.evaluate, 1.0, 1)
+# novel_search(novel_solution, csp, 20, csp.random_solution, csp.evaluate, 5.0, 2)
 
-l = [5, 6, 9, 12, 1, 0]
-l.pop(2)
-l.pop(4-1)
-print(l)
+# c = [5, 9, 4, 3, 1, 0, 12, 15, 18, 2]
+# to_be_popped = [0, 2, 6, 9]
+# for i in range(len(to_be_popped)):
+#     c.pop(to_be_popped[i]-i)
+# print(c)
+
+print(genetic_offspring([5, 4, 6, 3, 3, 4, 6, 6, 3, 5, 6, 3], csp))
+
 
 # argParser = argparse.ArgumentParser()
 # argParser.add_argument("-e", "--evaluation", help="e.g. fitness, cost, waste, costwaste", required=True)
@@ -193,3 +197,6 @@ print(l)
 # evolution_search(ea_solution, csp, args.population, csp.random_solution, evaluation, args.time, args.verbose)
 
 # python baseline.py -e fitness -p 20 -t 60.0 -v
+
+
+

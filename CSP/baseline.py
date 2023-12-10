@@ -58,7 +58,7 @@ def evolution_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit,
 
         # Produce offspring
         for i in range(population_n):
-            s = mutate_3ps(mutate_3ps(population[i].solution))
+            s = mutate_3ps_weighted(mutate_3ps_weighted(population[i].solution))
             offsprings.append(Individual(FITNESS_FUNC, s))
 
         all_individuals = population + offsprings
@@ -93,7 +93,7 @@ def evolution_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit,
 
     return best_solution
 
-def mutate_3ps(individual):
+def mutate_3ps_weighted(individual):
     # item 1 select randomly from ordererd list
     # item 2 and 3
     # - select stock cut with weighted probabilty
@@ -145,15 +145,15 @@ def mutate_3ps(individual):
     return offspring
 
 
-# csp = CSP(18, 
-#           [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
-#           [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
-#           8,
-#           [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
-#           [86, 85, 83, 79, 68, 66, 64, 63]
-#           )
+csp = CSP(18, 
+          [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
+          [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
+          8,
+          [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
+          [86, 85, 83, 79, 68, 66, 64, 63]
+          )
 # csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
-csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
+# csp = CSP(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
 # csp = CSP(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])
 
 
@@ -178,4 +178,4 @@ match args.evaluation:
 
 evolution_search(ea_solution, csp, args.population, csp.random_solution, evaluation, args.time, args.verbose)
 
-# python baseline.py -e fitness -p 20 -t 60.0 -v
+# python baseline.py -e fitness -p 20 -t 1.0 -v 2
