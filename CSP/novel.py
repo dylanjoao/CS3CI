@@ -25,11 +25,17 @@ def novel_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, ver
 
         # Select parents based on fitness
         parents = []
-        for i in range(offsprings):
-            parents.append((offsprings[i], FITNESS_FUNC(offsprings[i])))
-        parents.sort(key=lambda x: x[1], reverse=True)
+        for i in range(len(offsprings)):
+            fitness = FITNESS_FUNC(offsprings[i])
+            parents.append((offsprings[i], fitness))
+            if fitness < best_fitness:
+                best_fitness = fitness
+                best_solution = offsprings[i]
+                if verbose > 0: print(f"Generation {generation} with fitness {best_fitness}")
 
-        population = parents[:population_n]
+
+        parents.sort(key=lambda x: x[1], reverse=False)
+        population = [ x[0] for x in parents[:population_n] ]
 
         generation += 1
 
@@ -39,7 +45,7 @@ def novel_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit, ver
     if verbose > 1: info += (f"\n{csp.get_solution_info(best_solution)}")
     print(info)
 
-    # if type(out) == list: out.extend(best_solution)
+    if type(out) == list: out.extend(best_solution)
 
     return best_solution
 
@@ -152,51 +158,38 @@ def mutate_3ps(individual):
 
     return offspring
 
-# csp = CSP_Novel(18, 
-#           [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
-#           [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
-#           8,
-#           [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
-#           [86, 85, 83, 79, 68, 66, 64, 63]
-#           )
+csp = CSP_Novel(18, 
+          [2350, 2250, 2200, 2100, 2050, 2000, 1950, 1900, 1850, 1700, 1650, 1350, 1300, 1250, 1200, 1150, 1100, 1050], 
+          [2, 4, 4, 15, 6, 11, 6, 15, 13, 5, 2, 9, 3, 6, 10, 4, 8, 3],
+          8,
+          [4300, 4250, 4150, 3950, 3800, 3700, 3550, 3500],
+          [86, 85, 83, 79, 68, 66, 64, 63]
+          )
 # csp = CSP_Novel(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
 # csp = CSP_Novel(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
-csp = CSP_Novel(4, [3, 4, 5, 6], [4, 2, 2, 4], 1, [12], [100])
+# csp = CSP_Novel(4, [3, 4, 5, 6], [4, 2, 2, 4], 1, [12], [100])
 
-# c = Chromosone(csp.evaluate, csp.decode, [30, 20, 25, 30, 25, 20, 25, 25, 20, 30, 30, 25, 20, 30, 20, 25, 25] )
-# print(csp.get_solution_info([30, 20, 25, 25, 30, 20, 25, 25, 20, 30, 30, 25, 20, 30, 20, 25, 25]))
 
 novel_solution = []
 
-# novel_search(novel_solution, csp, 20, csp.random_solution, csp.evaluate, 5.0, 2)
+argParser = argparse.ArgumentParser()
+argParser.add_argument("-e", "--evaluation", help="e.g. fitness, cost, waste, costwaste", required=True)
+argParser.add_argument("-p", "--population", help="Number of inital population", type=int, default=20)
+argParser.add_argument("-t", "--time", help="Duration to run the algorithm", type=float, default=5.0)
+argParser.add_argument("-v", "--verbose", help="Print information", type=int, default=1)
 
-# c = [5, 9, 4, 3, 1, 0, 12, 15, 18, 2]
-# to_be_popped = [0, 2, 6, 9]
-# for i in range(len(to_be_popped)):
-#     c.pop(to_be_popped[i]-i)
-# print(c)
+args = argParser.parse_args()
+evaluation = None
 
-print(genetic_offspring([5, 4, 6, 3, 3, 4, 6, 6, 3, 5, 6, 3], csp))
+match args.evaluation:
+    case "fitness": evaluation = csp.evaluate
+    case "cost": evaluation = csp.evaluate_cost
+    case "waste": evaluation = csp.evaluate_waste
+    case "costwaste": evaluation = csp.evaluate_cost_waste
 
+novel_search(novel_solution, csp, args.population, csp.random_solution, evaluation, args.time, args.verbose)
 
-# argParser = argparse.ArgumentParser()
-# argParser.add_argument("-e", "--evaluation", help="e.g. fitness, cost, waste, costwaste", required=True)
-# argParser.add_argument("-p", "--population", help="Number of inital population", type=int, default=20)
-# argParser.add_argument("-t", "--time", help="Duration to run the algorithm", type=float, default=5.0)
-# argParser.add_argument("-v", "--verbose", help="Print information", type=int, default=1)
-
-# args = argParser.parse_args()
-# evaluation = None
-
-# match args.evaluation:
-#     case "fitness": evaluation = csp.evaluate
-#     case "cost": evaluation = csp.evaluate_cost
-#     case "waste": evaluation = csp.evaluate_waste
-#     case "costwaste": evaluation = csp.evaluate_cost_waste
-
-# evolution_search(ea_solution, csp, args.population, csp.random_solution, evaluation, args.time, args.verbose)
-
-# python baseline.py -e fitness -p 20 -t 60.0 -v
+# python novel.py -e fitness -p 20 -t 60.0 -v 1
 
 
 

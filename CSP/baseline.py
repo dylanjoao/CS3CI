@@ -157,9 +157,7 @@ csp = CSP(18,
 # csp = CSP(4, [5, 4, 6, 3], [1, 2, 3, 2], 1, [12], [10])
 
 
-random_solution = []
 ea_solution = []
-
 
 argParser = argparse.ArgumentParser()
 argParser.add_argument("-e", "--evaluation", help="e.g. fitness, cost, waste, costwaste", required=True)
@@ -178,4 +176,4 @@ match args.evaluation:
 
 evolution_search(ea_solution, csp, args.population, csp.random_solution, evaluation, args.time, args.verbose)
 
-# python baseline.py -e fitness -p 20 -t 1.0 -v 2
+# python baseline.py -e fitness -p 20 -t 5.0 -v 1
