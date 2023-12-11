@@ -1,51 +1,19 @@
-from deap import creator, base, tools, algorithms
-import numpy as np
-from csp_order import CSP
-
-
-csp = CSP(8, [3, 4, 5, 6, 7, 8, 9, 10], [5, 2, 1, 2, 4, 2, 1, 3], 3, [10, 13, 15], [100, 130, 150])
-
-# Minimisation of cost and wastage
-creator.create("Fitness", base.Fitness, weights=(-1.0, -1.0))
-creator.create("Individual", list, fitness=creator.Fitness)
-
-toolbox = base.Toolbox()
-
-
-IND_SIZE=10
-
-
-toolbox.register("attr_patterns", csp.random_solution)
-
-toolbox.register("individual", tools.initCycle, creator.Individual, toolbox.attr_patterns, n=1)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-
-def evalSolution(individual):
-    return csp.evaluate_cost(individual), csp.evaluate_wastage(individual)
-
-toolbox.register("evaluate", evalSolution)
-toolbox.register("mate", tools.cxOnePoint)
-toolbox.register("mutate", tools.mutGaussian)
-toolbox.register("select", tools.selNSGA2)
-
-def main():
-    NGEN = 50
-    MU = 50
-    LAMBDA = 100
-    CXPB = 0.7
-    MUTPB = 0.2
-
-    pop = toolbox.population(n=MU)
-    hof = tools.ParetoFront()
-    stats = tools.Statistics(lambda ind: ind.fitness.values)
-    stats.register("avg", np.mean, axis=0)
-    stats.register("std", np.std, axis=0)
-    stats.register("min", np.min, axis=0)
-    stats.register("max", np.max, axis=0)
-
-    algorithms.eaSimple(population=pop, toolbox=toolbox, mutpb=MU, cxpb=CXPB, ngen=NGEN, stats=stats,
-                              halloffame=hof)
-
-    return pop, stats, hof
-
-main()
+from concurrent.futures import ProcessPoolExecutor
+from time import sleep
+ 
+values = [3,4,5,6]
+def cube(x):
+    print(f'Cube of {x}:{x*x*x}')
+    return 1
+ 
+ 
+if __name__ == '__main__':
+    result =[]
+    with ProcessPoolExecutor(max_workers=5) as exe:
+        exe.submit(cube,2)
+         
+        # Maps the method 'cube' with a iterable
+        result = exe.map(cube,values)
+     
+    for r in result:
+      print(r)

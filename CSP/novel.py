@@ -7,6 +7,11 @@ from time import time
 import argparse
 
 def novel_search(out, csp, population_n, max_age, SOLUTION_FUNC, FITNESS_FUNC, limit, verbose=0):
+    ## DATA
+    data = { "best_fitness": float('inf'), "gen_found_at": -1, "time_found_at": -1, "waste": [], "cost": [] }
+    generational_best = []  # [ (fitness, time), (fitness, time) ]
+    ##
+    
     start = time()
     end = time() + limit
     generation = 0
@@ -17,6 +22,11 @@ def novel_search(out, csp, population_n, max_age, SOLUTION_FUNC, FITNESS_FUNC, l
 
     # while generation < limit:
     while time() < end:
+        ## DATA
+        _gen_best_sol = []
+        _gen_best = [ float('inf'), -1.0 ] 
+        ##
+
         offsprings = []
 
         # Produce offspring
@@ -33,7 +43,20 @@ def novel_search(out, csp, population_n, max_age, SOLUTION_FUNC, FITNESS_FUNC, l
             if fitness < best_fitness:
                 best_fitness = fitness
                 best_solution = offsprings[i][0]
-                if verbose > 0: print(f"Generation {generation} with fitness {best_fitness} after {(time()-start):.2f}s")
+                if verbose > 0: print(f"Gen {generation} with fitness {best_fitness:.9f} after {(time()-start):.2f}s")
+
+                ## DATA
+                data["best_fitness"] = fitness
+                data["gen_found_at"] = generation
+                data["time_found_at"] = time()-start
+                ##
+
+            ## DATA
+            if fitness < _gen_best[0]:
+                _gen_best[0] = fitness
+                _gen_best[1] = time()-start
+                _gen_best_sol = offsprings[i][0]
+            ##
 
 
         parents.sort(key=lambda x: x[1], reverse=False)
@@ -44,14 +67,20 @@ def novel_search(out, csp, population_n, max_age, SOLUTION_FUNC, FITNESS_FUNC, l
                 population[i] = [SOLUTION_FUNC(), 0]
 
         generation += 1
+        ## DATA
+        generational_best.append(_gen_best)
+        _gd = csp.decode(_gen_best_sol)
+        data["waste"].append(_gd["total_wastage"])
+        data["cost"].append(_gd["total_cost"])
+        #
 
     decoded = csp.decode(best_solution)
     info = ""
-    info += (f"[Novel Search] Best solution after {generation} generations, with fitness {best_fitness}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]} after {(time()-start):.2f}s")
+    info += (f"[Novel Search] Best in {generation} generations, with fitness {csp.evaluate(best_solution)}, waste {decoded["total_wastage"]}, cost {decoded["total_cost"]} after {(time()-start):.2f}s")
     if verbose > 1: info += (f"\n{csp.get_solution_info(best_solution)}")
     print(info)
 
-    if type(out) == list: out.extend(best_solution)
+    if type(out) == list: out.append((data, generational_best))
 
     return best_solution
 
@@ -182,30 +211,30 @@ csp = CSP_Novel(36,
 # csp = CSP_Novel(3, [20, 25, 30], [5, 7, 5], 3, [50, 80, 100], [100, 175, 190])
 # csp = CSP_Novel(4, [3, 4, 5, 6], [4, 2, 2, 4], 1, [12], [100])
 
+if __name__ == '__main__':
+    novel_solution = []
 
-novel_solution = []
+    argParser = argparse.ArgumentParser()
+    argParser.add_argument("-e", "--evaluation", help="e.g. fitness, cost, waste, costwaste", required=True)
+    argParser.add_argument("-p", "--population", help="Number of inital population", type=int, default=5)
+    argParser.add_argument("-a", "--age", help="Maximum age of each individual", type=int, default=2)
+    argParser.add_argument("-t", "--time", help="Duration to run the algorithm", type=float, default=5.0)
+    argParser.add_argument("-v", "--verbose", help="Print information", type=int, default=1)
 
-argParser = argparse.ArgumentParser()
-argParser.add_argument("-e", "--evaluation", help="e.g. fitness, cost, waste, costwaste", required=True)
-argParser.add_argument("-p", "--population", help="Number of inital population", type=int, default=5)
-argParser.add_argument("-a", "--age", help="Maximum age of each individual", type=int, default=2)
-argParser.add_argument("-t", "--time", help="Duration to run the algorithm", type=float, default=5.0)
-argParser.add_argument("-v", "--verbose", help="Print information", type=int, default=1)
+    args = argParser.parse_args()
+    evaluation = None
 
-args = argParser.parse_args()
-evaluation = None
+    match args.evaluation:
+        case "fitness": evaluation = csp.evaluate
+        case "cost": evaluation = csp.evaluate_cost
+        case "waste": evaluation = csp.evaluate_waste
+        case "costwaste": evaluation = csp.evaluate_cost_waste
 
-match args.evaluation:
-    case "fitness": evaluation = csp.evaluate
-    case "cost": evaluation = csp.evaluate_cost
-    case "waste": evaluation = csp.evaluate_waste
-    case "costwaste": evaluation = csp.evaluate_cost_waste
-
-novel_search(novel_solution, csp, args.population, args.age, csp.random_solution, evaluation, args.time, args.verbose)
+    novel_search(novel_solution, csp, args.population, args.age, csp.random_solution, evaluation, args.time, args.verbose)
 
 # novel_search(novel_solution, csp, 5, 3, csp.random_solution, csp.evaluate, 300.0, 1)
 
-# python novel.py -e fitness -p 5 -a 2 -t 100.0 -v 1
+# python novel.py -e fitness -p 3 -a 3 -t 100.0 -v 1
 
 
 
