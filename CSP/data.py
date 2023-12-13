@@ -29,27 +29,25 @@ if __name__ == '__main__':
 
     threads = []
     full_data = []
-    episodes = 3
-    duration = 1.0
+    episodes = 1
+    duration = 300.0
 
+    # algo = evolution_search
+    # args=(full_data, csp_baseline, 20, csp_baseline.random_solution, csp_baseline.evaluate_cost, duration, 0)
+    # path = './data/baseline_episodes.csv'
     algo = novel_search
-    # args=(full_data, csp_novel, 20, csp_novel.random_solution, csp_novel.evaluate, duration, 0)
-    args=(full_data, csp_novel, 3, 2, csp_novel.random_solution, csp_novel.evaluate, duration, 0)
+    args=(full_data, csp_novel, 3, 2, csp_novel.random_solution, csp_novel.evaluate_cost, duration, 0)
+    path = './data/novel_episodes.csv'
 
-    # # Start threads 
-    # for i in range(episodes): 
-    #     t = Thread(target=algo, args=args)
-    #     t.start()
-    #     threads.append(t)
+    # Start threads 
+    for i in range(episodes): 
+        t = Thread(target=algo, args=args)
+        t.start()
+        threads.append(t)
 
-    # # Wait all threads to finish
-    # for t in threads:
-    #     t.join()
-
-    result =[]
-    with ProcessPoolExecutor(max_workers=5) as exe:    
-        exe.submit(algo, args)
-        result = exe.map(algo,values)
+    # Wait all threads to finish
+    for t in threads:
+        t.join()
 
     data = {
         "ep_best_fitness": [],
@@ -73,12 +71,12 @@ if __name__ == '__main__':
             gen_data["gen_best_fitness"].append(gen[0])
             gen_data["time_found_at"].append(gen[1])
 
-        df = pd.DataFrame(gen_data)
-        df.to_csv(f'./data/novel_generations/novel_gens_for_ep_{index}.csv', index=True)
-        index += 1
+        # df = pd.DataFrame(gen_data)
+        # df.to_csv(f'./data/novel_generations/novel_gens_for_ep_{index}.csv', index=True)
+        # index += 1
 
 
     df = pd.DataFrame(data)
 
     # # Save the dataframe to a CSV file
-    df.to_csv('./data/novel_episodes.csv', index=True)
+    df.to_csv(path, index=True, mode='a', header=False)

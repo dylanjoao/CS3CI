@@ -90,7 +90,7 @@ def evolution_search(out, csp, population_n, SOLUTION_FUNC, FITNESS_FUNC, limit,
             if winners[i].fitness < best_fitness:
                 best_solution = winners[i].solution
                 best_fitness = winners[i].fitness
-                if verbose > 0: print(f"Gen {generation} with fitness {best_fitness:.9} after {(time()-start):.2f}s")
+                if verbose > 0: print(f"Gen {generation} with fitness {best_fitness} after {(time()-start):.2f}s")
                 ## DATA
                 data["best_fitness"] = winners[i].fitness
                 data["gen_found_at"] = generation
